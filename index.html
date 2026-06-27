@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YouthConnect – Plateforme d'entraide entre jeunes</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- Google Fonts : Syne (titres) + Inter (corps) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet" />
+
+</head>
+
+<body>
+
+  <!--NOTIFICATIONS -->
+  <div id="notification-container" aria-live="polite"></div>
+
+  <!--OVERLAY MODAL GLOBAL-->
+  <div id="modal-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal-box" id="modal-box">
+      <!-- contenu injecté dynamiquement -->
+    </div>
+  </div>
+
+  <!--BARRE DE NAVIGATION-->
+  <header id="navbar" class="navbar">
+    <div class="container nav-inner">
+
+      <!-- Logo -->
+      <a href="#" class="logo" id="logo-link" onclick="showPage('home')">
+        <img class="logo-image"
+          src="https://res.cloudinary.com/dyo3r3lph/image/upload/v1782442699/Youth_Connect_logo_1_tsfegv.jpg"
+          alt="logo">
+        <span>Youth<strong>Connect</strong></span>
+      </a>
+
+      <!-- Menu principal (desktop inline / mobile dropdown) -->
+      <nav class="nav-links" id="nav-links" role="navigation" aria-label="Menu principal">
+        <a href="#" onclick="showPage('home')" class="nav-item" data-page="home">Accueil</a>
+        <a href="#" onclick="showPage('forum')" class="nav-item" data-page="forum">Forum</a>
+        <a href="#" onclick="showPage('categories')" class="nav-item" data-page="categories">Catégories</a>
+        <a href="#" onclick="showPage('about')" class="nav-item" data-page="about">À propos</a>
+        <a href="#" onclick="showPage('contact')" class="nav-item" data-page="contact">Contact</a>
+        <!-- Boutons visibles uniquement dans le menu mobile -->
+        <div class="nav-mobile-actions">
+          <div id="guest-actions-mobile">
+            <button class="btn btn-ghost" onclick="openModal('login')">Connexion</button>
+            <button class="btn btn-primary" onclick="openModal('register')">Inscription</button>
+          </div>
+
+        </div>
+      </nav>
+
+      <!-- Actions desktop uniquement -->
+      <div class="nav-actions" id="nav-actions">
+        <div id="guest-actions">
+          <button class="btn btn-ghost" onclick="openModal('login')">Connexion</button>
+          <button class="btn btn-primary" onclick="openModal('register')">Inscription</button>
+        </div>
+        <div id="user-actions" class="hidden">
+          <button class="btn btn-ghost" onclick="showPage('dashboard')" id="welcome-btn">Mon profil</button>
+          <button class="btn btn-outline-danger" onclick="logout()">Déconnexion</button>
+        </div>
+      </div>
+
+      <!-- Burger mobile (toujours le dernier élément) -->
+      <button class="burger" id="burger-btn" aria-label="Ouvrir le menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+
+    </div>
+  </header>
+
+  <!--PAGE : ACCUEIL-->
+  <main id="page-home" class="page active">
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-bg-shapes" aria-hidden="true">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+      </div>
+      <div class="container hero-inner">
+        <div class="hero-text">
+          <p class="hero-eyebrow">La communauté qui grandit avec toi</p>
+          <h1 class="hero-title">Pose tes questions.<br />Partage tes conseils.<br /><span class="accent">Avance
+              ensemble.</span></h1>
+          <p class="hero-subtitle">YouthConnect réunit des milliers de jeunes prêts à s'entraider sur les études, la
+            tech, l'entrepreneuriat et bien plus encore.</p>
+          <div class="hero-cta">
+            <button class="btn btn-primary btn-lg" onclick="openModal('register')">Commencer gratuitement</button>
+            <button class="btn btn-ghost btn-lg" onclick="showPage('forum')">Explorer le forum</button>
+          </div>
+        </div>
+        <div class="hero-illustration" aria-hidden="true">
+          <svg viewBox="0 0 480 400" fill="none" xmlns="http://www.w3.org/2000/svg" class="hero-svg">
+            <!-- Fond carte principale -->
+            <rect x="60" y="40" width="360" height="320" rx="24" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.5" />
+            <!-- Bulles de discussion -->
+            <rect x="90" y="80" width="200" height="60" rx="14" fill="#2563eb" />
+            <text x="110" y="106" font-family="Inter,sans-serif" font-size="13" fill="white" font-weight="600">Comment
+              apprendre le JS ?</text>
+            <text x="110" y="124" font-family="Inter,sans-serif" font-size="11" fill="#bfdbfe">par Ahmed ·
+              Informatique</text>
+            <!-- Triangle bulle -->
+            <polygon points="110,140 130,140 120,155" fill="#2563eb" />
+
+            <rect x="190" y="175" width="200" height="60" rx="14" fill="#1e3a8a" />
+            <text x="210" y="201" font-family="Inter,sans-serif" font-size="13" fill="white" font-weight="600">Je
+              recommande freeCodeCamp !</text>
+            <text x="210" y="219" font-family="Inter,sans-serif" font-size="11" fill="#93c5fd">par Fatou · 12
+              likes</text>
+            <polygon points="370,235 390,235 380,250" fill="#1e3a8a" />
+
+            <rect x="90" y="270" width="180" height="52" rx="14" fill="#dbeafe" />
+            <text x="110" y="293" font-family="Inter,sans-serif" font-size="12" fill="#1e40af" font-weight="600">+1 pour
+              The Odin Project !</text>
+            <text x="110" y="311" font-family="Inter,sans-serif" font-size="11" fill="#3b82f6">par Koffi · 8
+              likes</text>
+
+            <!-- Avatars flottants -->
+            <circle cx="420" cy="90" r="22" fill="#2563eb" />
+            <text x="412" y="97" font-family="Inter,sans-serif" font-size="15" fill="white">👨🏾</text>
+            <circle cx="60" cy="230" r="18" fill="#1e3a8a" />
+            <text x="52" y="237" font-family="Inter,sans-serif" font-size="13" fill="white">👩🏽</text>
+            <circle cx="410" cy="320" r="16" fill="#3b82f6" />
+            <text x="402" y="326" font-family="Inter,sans-serif" font-size="12" fill="white">👦🏿</text>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- Statistiques -->
+    <section class="stats-section">
+      <div class="container stats-grid">
+        <div class="stat-card">
+          <div class="stat-number" id="stat-members">0</div>
+          <div class="stat-label">Membres actifs</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="stat-questions">0</div>
+          <div class="stat-label">Questions posées</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="stat-answers">0</div>
+          <div class="stat-label">Réponses partagées</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">10</div>
+          <div class="stat-label">Catégories</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Catégories populaires -->
+    <section class="categories-section">
+      <div class="container">
+        <div class="section-header">
+          <p class="section-eyebrow">Explorer par thème</p>
+          <h2 class="section-title">Catégories populaires</h2>
+        </div>
+        <div class="categories-grid" id="home-categories-grid">
+          <!-- Injecté par JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Dernières questions -->
+    <section class="latest-section">
+      <div class="container">
+        <div class="section-header">
+          <p class="section-eyebrow">Fil d'actualité</p>
+          <h2 class="section-title">Questions récentes</h2>
+          <button class="btn btn-ghost" onclick="showPage('forum')">Voir tout →</button>
+        </div>
+        <div class="posts-list" id="home-posts-list">
+          <!-- Injecté par JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- À propos rapide -->
+    <section class="about-teaser">
+      <div class="container about-teaser-inner">
+        <div class="about-teaser-text">
+          <p class="section-eyebrow">Pourquoi YouthConnect ?</p>
+          <h2 class="section-title">Une communauté bâtie par des jeunes, pour des jeunes</h2>
+          <p>Que tu sois étudiant, développeur en herbe ou futur entrepreneur, tu trouveras ici des personnes qui
+            partagent tes ambitions et tes défis. Pose tes questions sans gêne, réponds à celles des autres et construis
+            ton réseau.</p>
+          <button class="btn btn-primary" onclick="showPage('about')">En savoir plus</button>
+        </div>
+        <div class="about-teaser-features">
+          <div class="feature-item">
+            <div class="feature-icon"> <img class="feature-icon-img" src="https://img.icons8.com/?size=100&id=F3QB8gOfWNW4&format=png&color=000000" alt="discusion"></div>
+            <div>
+              <h3>Forum structuré</h3>
+              <p>Des discussions organisées par catégories pour trouver rapidement ce que tu cherches.</p>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon"> <img class="feature-icon-img" src="https://img.icons8.com/?size=100&id=p3miLroKw4iR&format=png&color=000000" alt="recherche"></div>
+            <div>
+              <h3>Recherche instantanée</h3>
+              <p>Retrouve n'importe quelle question ou réponse en quelques secondes.</p>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon"> <img class="feature-icon-img" src="https://img.icons8.com/?size=100&id=37000&format=png&color=000000" alt="Communauté bienveillante"></div>
+            <div>
+              <h3>Communauté bienveillante</h3>
+              <p>Un espace respectueux où chaque question mérite une vraie réponse.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container footer-inner">
+        <div class="footer-brand">
+          <a href="#" class="logo" id="logo-link" onclick="showPage('home')">
+            <img class="logo-image1"
+              src="https://res.cloudinary.com/dyo3r3lph/image/upload/v1782442699/Youth_Connect_logo_1_tsfegv.jpg"
+              alt="logo">
+            <span>Youth<strong>Connect</strong></span>
+          </a>
+          <p class="footer-tagline">La plateforme d'entraide pour la jeunesse africaine et francophone.</p>
+        </div>
+        <div class="footer-links">
+          <h4>Navigation</h4>
+          <ul>
+            <li><a href="#" onclick="showPage('home')">Accueil</a></li>
+            <li><a href="#" onclick="showPage('forum')">Forum</a></li>
+            <li><a href="#" onclick="showPage('categories')">Catégories</a></li>
+            <li><a href="#" onclick="showPage('about')">À propos</a></li>
+            <li><a href="#" onclick="showPage('contact')">Contact</a></li>
+          </ul>
+        </div>
+        <div class="footer-links">
+          <h4>Catégories</h4>
+          <ul>
+            <li><a href="#" onclick="filterAndGo('Informatique')">Informatique</a></li>
+            <li><a href="#" onclick="filterAndGo('Développement Web')">Développement Web</a></li>
+            <li><a href="#" onclick="filterAndGo('Entrepreneuriat')">Entrepreneuriat</a></li>
+            <li><a href="#" onclick="filterAndGo('Bourses d\'études')">Bourses d'études</a></li>
+            <li><a href="#" onclick="filterAndGo('Intelligence Artificielle')">Intelligence Artificielle</a></li>
+          </ul>
+        </div>
+        <div class="footer-links">
+          <h4>Compte</h4>
+          <ul>
+            <li><a href="#" onclick="openModal('register')">S'inscrire</a></li>
+            <li><a href="#" onclick="openModal('login')">Se connecter</a></li>
+            <li><a href="#" onclick="showPage('dashboard')">Tableau de bord</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2026 YouthConnect. Fait avec Ang_Dev pour la jeunesse.</p>
+      </div>
+    </footer>
+
+  </main>
+
+  <!--PAGE : FORUM-->
+  <main id="page-forum" class="page hidden">
+    <div class="page-hero page-hero-blue">
+      <div class="container">
+        <h1>Forum de discussion</h1>
+        <p>Pose tes questions, partage tes expériences, aide les autres.</p>
+      </div>
+    </div>
+    <div class="container forum-layout">
+
+      <!-- Barre d'outils forum -->
+      <div class="forum-toolbar">
+        <div class="search-wrap">
+          <svg class="search-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd"
+              d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+              clip-rule="evenodd" />
+          </svg>
+          <input type="text" id="search-input" class="search-input" placeholder="Rechercher une question…"
+            oninput="searchPosts()" />
+        </div>
+        <select class="select-filter" id="category-filter" onchange="filterPosts()">
+          <option value="">Toutes les catégories</option>
+        </select>
+        <button class="btn btn-primary" id="new-post-btn" onclick="openNewPostModal()">+ Nouvelle question</button>
+      </div>
+
+      <!-- Liste des publications -->
+      <div id="forum-posts-list" class="posts-list">
+        <!-- Injecté par JS -->
+      </div>
+      <div id="forum-empty" class="empty-state hidden">
+        <div class="empty-icon">🔍</div>
+        <h3>Aucune question trouvée</h3>
+        <p>Sois le premier à poser cette question !</p>
+        <button class="btn btn-primary" onclick="openNewPostModal()">Poser une question</button>
+      </div>
+
+    </div>
+  </main>
+
+  <!--PAGE : DÉTAIL D'UNE QUESTION-->
+  <main id="page-post-detail" class="page hidden">
+    <div class="container post-detail-layout" id="post-detail-content">
+      <!-- Injecté par JS -->
+    </div>
+  </main>
+
+  <!--PAGE : CATÉGORIES-->
+  <main id="page-categories" class="page hidden">
+    <div class="page-hero page-hero-blue">
+      <div class="container">
+        <h1>Toutes les catégories</h1>
+        <p>Parcours les thèmes et trouve les discussions qui t'intéressent.</p>
+      </div>
+    </div>
+    <div class="container">
+      <div class="categories-grid full-categories-grid" id="full-categories-grid">
+        <!-- Injecté par JS -->
+      </div>
+    </div>
+  </main>
+
+  <!--PAGE : À PROPOS-->
+  <main id="page-about" class="page hidden">
+    <div class="page-hero page-hero-blue">
+      <div class="container">
+        <h1>À propos de YouthConnect</h1>
+        <p>Notre mission, notre vision, nos valeurs.</p>
+      </div>
+    </div>
+    <div class="container about-page">
+      <div class="about-mission">
+        <h2>Notre mission</h2>
+        <p>YouthConnect est née d'un constat simple : les jeunes talentueux manquent d'espaces bienveillants où poser
+          leurs questions sans jugement et accéder à des conseils de qualité. Notre mission est de combler ce vide en
+          créant une communauté solidaire, inclusive et dynamique.</p>
+      </div>
+      <div class="about-values-grid">
+        <div class="value-card">
+          <div class="value-icon"> <img src="https://res.cloudinary.com/dyo3r3lph/image/upload/v1782579329/Entraide_tbtbzd.jpg" alt="Entraide"></div>
+          <h3>Entraide</h3>
+          <p>Chaque membre est à la fois apprenante et enseignante. La connaissance circuler librement.</p>
+        </div>
+        <div class="value-card">
+          <div class="value-icon"> <img src="https://res.cloudinary.com/dyo3r3lph/image/upload/v1782579329/Inclusivit%C3%A9_evt88w.jpg" alt="Inclusivité"></div>
+          <h3>Inclusivité</h3>
+          <p>YouthConnect accueille les jeunes de toute l'Afrique francophone et d'ailleurs.</p>
+        </div>
+        <div class="value-card">
+          <div class="value-icon"> <img src="https://res.cloudinary.com/dyo3r3lph/image/upload/v1782579328/Excellence_du17pv.jpg" alt="Excellence"></div>
+          <h3>Excellence</h3>
+          <p>Nous encourageons les réponses de qualité et la rigueur dans chaque échange.</p>
+        </div>
+        <div class="value-card">
+          <div class="value-icon"> <img src="https://res.cloudinary.com/dyo3r3lph/image/upload/v1782579328/Respect_ehk0xy.jpg" alt="Respect"></div>
+          <h3>Respect</h3>
+          <p>Un espace sûr où toutes les questions sont les bienvenues, sans moquerie ni mépris.</p>
+        </div>
+      </div>
+      <div class="about-team">
+        <h2>Comment ça marche ?</h2>
+        <div class="steps-list">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div>
+              <h3>Crée ton compte</h3>
+              <p>Inscription rapide et gratuite, aucune information inutile demandée.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div>
+              <h3>Pose ou explore</h3>
+              <p>Formule ta question ou cherche si elle a déjà été posée.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div>
+              <h3>Échange</h3>
+              <p>Reçois des réponses de la communauté et réponds à ton tour.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div>
+              <h3>Grandis</h3>
+              <p>Consulte ton historique, suis tes contributions, inspire les autres.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!--PAGE : CONTACT-->
+<main id="page-contact" class="page hidden">
+  <div class="page-hero page-hero-blue">
+    <div class="container">
+      <h1>Nous contacter</h1>
+      <p>Une question ? Une suggestion ? On t'écoute.</p>
+    </div>
+  </div>
+
+  <div class="container contact-layout">
+
+    <!-- COLONNE GAUCHE : réseaux sociaux -->
+    <div class="contact-info">
+      <h2>On est là pour toi</h2>
+      <p>Tu peux nous écrire pour toute question concernant la plateforme, signaler un problème ou proposer une amélioration.</p>
+
+      <ul class="contact-list">
+        <li class="social-item">
+          <a href="https://www.facebook.com/share/1PUxVjMrNH/" target="_blank" class="social-link fb">
+            <span class="social-icon-wrap"><svg viewBox="0 0 24 24" fill="white" width="18" height="18"><path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.97h-1.513c-1.491 0-1.956.93-1.956 1.886v2.268h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/></svg></span>
+            <span class="social-label">Facebook</span>
+            <span class="social-arrow">→</span>
+          </a>
+        </li>
+        <li class="social-item">
+          <a href="https://www.instagram.com/goodfellagf?igsh=eDV4bDE3Z294Mmdv" target="_blank" class="social-link ig">
+            <span class="social-icon-wrap"><svg viewBox="0 0 24 24" fill="white" width="18" height="18"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg></span>
+            <span class="social-label">Instagram</span>
+            <span class="social-arrow">→</span>
+          </a>
+        </li>
+        <li class="social-item">
+          <a href="https://www.tiktok.com/@ange_dev0?_r=1&_t=ZS-97ZB3jfJxIo" target="_blank" class="social-link tt">
+            <span class="social-icon-wrap"><svg viewBox="0 0 24 24" fill="white" width="18" height="18"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.75a4.85 4.85 0 01-1.01-.06z"/></svg></span>
+            <span class="social-label">TikTok</span>
+            <span class="social-arrow">→</span>
+          </a>
+        </li>
+        <li class="social-item">
+          <a href="https://x.com/YouthConnectHQ" target="_blank" class="social-link tw">
+            <span class="social-icon-wrap"><svg viewBox="0 0 24 24" fill="white" width="18" height="18"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/></svg></span>
+            <span class="social-label">Twitter / X</span>
+            <span class="social-arrow">→</span>
+          </a>
+        </li>
+        <li class="social-item">
+          <a href="https://linkedin.com/company/YouthConnectHQ" target="_blank" class="social-link li">
+            <span class="social-icon-wrap"><svg viewBox="0 0 24 24" fill="white" width="18" height="18"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></span>
+            <span class="social-label">LinkedIn</span>
+            <span class="social-arrow">→</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <!-- COLONNE DROITE : formulaire -->
+    <div class="contact-container">
+      <h1>Envoie-nous un message</h1>
+      <form action="https://formspree.io/f/xykqwaev" method="POST">
+        <div class="form-group">
+          <label for="prenom">Ton prénom *</label>
+          <input type="text" id="prenom" name="prenom" placeholder="Ex : Amina" required>
+        </div>
+        <div class="form-group">
+          <label for="email">Ton email *</label>
+          <input type="email" id="email" name="email" placeholder="toi@exemple.com" required>
+        </div>
+        <div class="form-group">
+          <label for="sujet">Sujet *</label>
+          <input type="text" id="sujet" name="sujet" placeholder="De quoi s'agit-il ?" required>
+        </div>
+        <div class="form-group">
+          <label for="message">Message *</label>
+          <textarea id="message" name="message" placeholder="Écris ton message ici..." required></textarea>
+        </div>
+        <button type="submit" class="submit-btn">Envoyer le message</button>
+        <div class="success-msg" id="successMsg">✅ Ton message a bien été envoyé !</div>
+      </form>
+    </div>
+
+  </div>
+</main>
+
+  <!--PAGE : TABLEAU DE BORD-->
+  <main id="page-dashboard" class="page hidden">
+    <div class="page-hero page-hero-blue">
+      <div class="container">
+        <h1 id="dashboard-greeting">Mon tableau de bord</h1>
+        <p>Suis tes contributions et gère ton profil.</p>
+      </div>
+    </div>
+    <div class="container dashboard-layout">
+      <!-- Carte profil -->
+      <div class="dashboard-sidebar">
+        <div class="profile-card card">
+          <div class="avatar-circle" id="dash-avatar">?</div>
+          <h2 id="dash-name">–</h2>
+          <p id="dash-email" class="text-muted">–</p>
+          <p class="member-since" id="dash-since">–</p>
+          <div class="profile-stats">
+            <div class="pstat">
+              <div class="pstat-num" id="dash-posts-count">0</div>
+              <div class="pstat-label">Questions</div>
+            </div>
+            <div class="pstat">
+              <div class="pstat-num" id="dash-comments-count">0</div>
+              <div class="pstat-label">Réponses</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Activité -->
+      <div class="dashboard-main">
+        <div class="card">
+          <h2 class="card-title">Mes questions</h2>
+          <div id="dash-posts-list" class="posts-list small-posts">
+            <!-- Injecté par JS -->
+          </div>
+          <div id="dash-posts-empty" class="empty-state hidden">
+            <div class="empty-icon">📝</div>
+            <p>Tu n'as pas encore posé de question.</p>
+            <button class="btn btn-primary" onclick="showPage('forum')">Aller au forum</button>
+          </div>
+        </div>
+        <div class="card mt-lg">
+          <h2 class="card-title">Mes réponses récentes</h2>
+          <div id="dash-comments-list" class="comments-list">
+            <!-- Injecté par JS -->
+          </div>
+          <div id="dash-comments-empty" class="empty-state hidden">
+            <div class="empty-icon">💬</div>
+            <p>Tu n'as pas encore répondu à une question.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+
+</html>
