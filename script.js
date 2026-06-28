@@ -956,3 +956,22 @@ function escapeHtml(str) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
+
+/* ─────────────────────────────────────────────────────────────
+   20. EXPOSITION GLOBALE DES FONCTIONS (nécessaire avec type="module")
+   Les attributs onclick="..." dans le HTML ne peuvent pas accéder
+   aux fonctions d'un module ES, il faut les attacher à window.
+───────────────────────────────────────────────────────────────*/
+window.showPage         = showPage;
+window.filterAndGo      = filterAndGo;
+window.openModal        = openModal;
+window.closeModal       = closeModal;
+window.openNewPostModal = openNewPostModal;
+window.openPostDetail   = openPostDetail;
+window.handleLogin      = handleLogin;
+window.handleRegister   = handleRegister;
+window.handleNewPost    = handleNewPost;
+window.handleAddComment = handleAddComment;
+window.searchPosts      = searchPosts;
+window.filterPosts      = filterPosts;
+window.logout           = logout;

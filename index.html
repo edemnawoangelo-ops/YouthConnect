@@ -51,7 +51,10 @@
             <button class="btn btn-ghost" onclick="openModal('login')">Connexion</button>
             <button class="btn btn-primary" onclick="openModal('register')">Inscription</button>
           </div>
-
+          <div id="user-actions-mobile" class="hidden">
+            <button class="btn btn-ghost" onclick="showPage('dashboard')" id="welcome-btn-mobile">Mon profil</button>
+            <button class="btn btn-outline-danger" onclick="logout()">Déconnexion</button>
+          </div>
         </div>
       </nav>
 
@@ -225,7 +228,7 @@
     <footer class="footer">
       <div class="container footer-inner">
         <div class="footer-brand">
-          <a href="#" class="logo" id="logo-link" onclick="showPage('home')">
+          <a href="#" class="logo" id="logo-link-footer" onclick="showPage('home')">
             <img class="logo-image1"
               src="https://res.cloudinary.com/dyo3r3lph/image/upload/v1782442699/Youth_Connect_logo_1_tsfegv.jpg"
               alt="logo">
