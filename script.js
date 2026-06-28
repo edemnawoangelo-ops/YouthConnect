@@ -1,47 +1,33 @@
 /* ═══════════════════════════════════════════════════════════════
    YouthConnect – script.js
-   Fonctionnalités : Auth, Forum, Commentaires, Dashboard,
-   Recherche, Filtres, LocalStorage, Notifications, Navigation
+   Firebase Firestore pour posts/commentaires (synchronisation multi-appareils)
+   LocalStorage uniquement pour la session utilisateur
 ═══════════════════════════════════════════════════════════════ */
 
-function submitContact(event) {
-  event.preventDefault();
+/* ─────────────────────────────────────────────────────────────
+   FIREBASE CONFIG — Remplace par tes propres valeurs Firebase
+   https://console.firebase.google.com → Ton projet → Paramètres → Config web
+───────────────────────────────────────────────────────────────*/
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getFirestore, collection, addDoc, getDocs, query, orderBy,
+  onSnapshot, doc, deleteDoc, serverTimestamp, where
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-  const btn = document.getElementById('submit-btn');
-  const successMsg = document.getElementById('success-msg');
-  const errorMsg = document.getElementById('error-msg');
+const firebaseConfig = {
+  apiKey:            "AIzaSyDg7yT-LOy8kwzOBGEVkl1ipxvcWFUWIGQ",
+  authDomain:        "youth-connect-2.firebaseapp.com",
+  projectId:         "youth-connect-2",
+  storageBucket:     "youth-connect-2.firebasestorage.app",
+  messagingSenderId: "26735360538",
+  appId:             "1:26735360538:web:9197b8cad3c821b2476fa3"
+};
 
-  successMsg.style.display = 'none';
-  errorMsg.style.display = 'none';
-
-  btn.textContent = '⏳ Envoi en cours...';
-  btn.disabled = true;
-
-  const templateParams = {
-    from_name:  document.getElementById('contact-name').value,
-    from_email: document.getElementById('contact-email').value,
-    subject:    document.getElementById('contact-subject').value,
-    message:    document.getElementById('contact-message').value,
-  };
-
-  emailjs.send('VOTRE_SERVICE_ID', 'VOTRE_TEMPLATE_ID', templateParams)
-    .then(() => {
-      successMsg.style.display = 'block';
-      document.getElementById('contact-form').reset();
-      btn.textContent = 'Envoyer le message';
-      btn.disabled = false;
-      setTimeout(() => { successMsg.style.display = 'none'; }, 5000);
-    })
-    .catch((error) => {
-      console.error('EmailJS error:', error);
-      errorMsg.style.display = 'block';
-      btn.textContent = 'Envoyer le message';
-      btn.disabled = false;
-    });
-}
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
 
 /* ─────────────────────────────────────────────────────────────
-   1. DONNÉES : CATÉGORIES & DONNÉES DE DÉMONSTRATION
+   1. DONNÉES : CATÉGORIES
 ───────────────────────────────────────────────────────────────*/
 
 const CATEGORIES = [
@@ -57,121 +43,115 @@ const CATEGORIES = [
   { name: "Vie Étudiante",             image: "https://res.cloudinary.com/dyo3r3lph/image/upload/v1782576444/Vie_%C3%89tudiante_h6of2i.jpg" },
 ];
 
-/** Publications de démonstration pré-chargées */
+/* Publications de démonstration (chargées une seule fois dans Firestore si vide) */
 const DEMO_POSTS = [
-  {
-    id: "demo_1",
-    title: "Comment débuter le développement web en 2026 ?",
-    body: "Bonjour à tous ! Je suis lycéen et je veux apprendre le développement web mais je ne sais pas par où commencer. Faut-il commencer par HTML/CSS, puis JavaScript ? Ou existe-t-il une meilleure approche ? Merci d'avance pour vos conseils.",
-    category: "Développement Web",
-    author: "Kofi Mensah",
-    authorId: "demo_user",
-    date: new Date(Date.now() - 86400000 * 2).toISOString(),
-  },
-  {
-    id: "demo_2",
-    title: "Quelles sont les meilleures bourses pour étudier en Europe ?",
-    body: "Je suis en terminale et je cherche des bourses pour poursuivre mes études en ingénierie en Europe. Est-ce que quelqu'un a déjà postulé à des programmes comme Erasmus+ ou les bourses Eiffel ? Comment avez-vous préparé votre dossier ?",
-    category: "Bourses d'études",
-    author: "Amina Traoré",
-    authorId: "demo_user",
-    date: new Date(Date.now() - 86400000 * 5).toISOString(),
-  },
-  {
-    id: "demo_3",
-    title: "L'IA va-t-elle remplacer les développeurs web ?",
-    body: "Avec l'essor de ChatGPT, Copilot et d'autres outils IA, beaucoup disent que les développeurs ne seront plus nécessaires dans 5 ans. Qu'en pensez-vous ? Doit-on quand même apprendre à coder ou se concentrer sur d'autres compétences ?",
-    category: "Intelligence Artificielle",
-    author: "Ibrahima Diallo",
-    authorId: "demo_user",
-    date: new Date(Date.now() - 86400000 * 1).toISOString(),
-  },
-  {
-    id: "demo_4",
-    title: "Comment rester motivé quand on apprend seul ?",
-    body: "J'apprends la programmation de façon autodidacte depuis 6 mois, mais il m'arrive souvent de procrastiner ou de douter de moi-même. Quels sont vos conseils pour maintenir la motivation et avancer malgré les obstacles ?",
-    category: "Motivation",
-    author: "Fatou Sow",
-    authorId: "demo_user",
-    date: new Date(Date.now() - 86400000 * 3).toISOString(),
-  },
-  {
-    id: "demo_5",
-    title: "Trouver un stage en informatique sans expérience : conseils ?",
-    body: "Je suis en deuxième année de BTS Informatique et je dois trouver un stage de 3 mois. Le problème, c'est que la plupart des offres demandent de l'expérience. Comment avez-vous décroché votre premier stage ? Faut-il créer des projets personnels ?",
-    category: "Emploi",
-    author: "Kwame Asante",
-    authorId: "demo_user",
-    date: new Date(Date.now() - 86400000 * 7).toISOString(),
-  },
-];
-
-/** Commentaires de démonstration */
-const DEMO_COMMENTS = [
-  { id: "dc_1", postId: "demo_1", author: "Nia Johnson",   authorId: "demo_user", body: "Commence absolument par HTML et CSS, puis JavaScript. The Odin Project est une ressource gratuite et excellente pour apprendre dans le bon ordre !", date: new Date(Date.now() - 86400000).toISOString() },
-  { id: "dc_2", postId: "demo_1", author: "Oumar Bah",     authorId: "demo_user", body: "Je recommande aussi freeCodeCamp ! Gratuit, structuré et avec des certifications reconnues. J'ai commencé il y a 1 an et je fais maintenant des projets freelance.", date: new Date(Date.now() - 3600000 * 18).toISOString() },
-  { id: "dc_3", postId: "demo_2", author: "Léa Dubois",    authorId: "demo_user", body: "J'ai obtenu une bourse Eiffel l'an dernier ! Le plus important c'est d'avoir un excellent dossier académique et une lettre de motivation très personnalisée. N'hésite pas à me contacter.", date: new Date(Date.now() - 86400000 * 3).toISOString() },
-  { id: "dc_4", postId: "demo_3", author: "Seun Adeyemi",  authorId: "demo_user", body: "L'IA est un outil, pas un remplaçant. Apprendre à coder te donne la logique pour utiliser ces outils de façon efficace. Les dev qui savent utiliser l'IA seront très demandés.", date: new Date(Date.now() - 3600000 * 6).toISOString() },
-  { id: "dc_5", postId: "demo_4", author: "Mariam Coulibaly", authorId: "demo_user", body: "Ce qui m'aide beaucoup : fixer de petits objectifs quotidiens et les noter. Une heure de code par jour, c'est mieux que 8h le week-end. Et rejoindre une communauté comme ici aide énormément !", date: new Date(Date.now() - 86400000 * 2).toISOString() },
-  { id: "dc_6", postId: "demo_5", author: "Romain Kéïta",  authorId: "demo_user", body: "Crée des projets sur GitHub, même simples ! Un portfolio avec 3-4 projets bien documentés vaut n'importe quelle expérience sur un CV de débutant. J'ai décroché mon stage comme ça.", date: new Date(Date.now() - 86400000 * 5).toISOString() },
+  { title: "Comment débuter le développement web en 2026 ?", body: "Bonjour à tous ! Je suis lycéen et je veux apprendre le développement web mais je ne sais pas par où commencer. Faut-il commencer par HTML/CSS, puis JavaScript ? Ou existe-t-il une meilleure approche ? Merci d'avance pour vos conseils.", category: "Développement Web", author: "Kofi Mensah", authorId: "demo_user" },
+  { title: "Quelles sont les meilleures bourses pour étudier en Europe ?", body: "Je suis en terminale et je cherche des bourses pour poursuivre mes études en ingénierie en Europe. Est-ce que quelqu'un a déjà postulé à des programmes comme Erasmus+ ou les bourses Eiffel ? Comment avez-vous préparé votre dossier ?", category: "Bourses d'études", author: "Amina Traoré", authorId: "demo_user" },
+  { title: "L'IA va-t-elle remplacer les développeurs web ?", body: "Avec l'essor de ChatGPT, Copilot et d'autres outils IA, beaucoup disent que les développeurs ne seront plus nécessaires dans 5 ans. Qu'en pensez-vous ? Doit-on quand même apprendre à coder ou se concentrer sur d'autres compétences ?", category: "Intelligence Artificielle", author: "Ibrahima Diallo", authorId: "demo_user" },
+  { title: "Comment rester motivé quand on apprend seul ?", body: "J'apprends la programmation de façon autodidacte depuis 6 mois, mais il m'arrive souvent de procrastiner ou de douter de moi-même. Quels sont vos conseils pour maintenir la motivation et avancer malgré les obstacles ?", category: "Motivation", author: "Fatou Sow", authorId: "demo_user" },
+  { title: "Trouver un stage en informatique sans expérience : conseils ?", body: "Je suis en deuxième année de BTS Informatique et je dois trouver un stage de 3 mois. Le problème, c'est que la plupart des offres demandent de l'expérience. Comment avez-vous décroché votre premier stage ? Faut-il créer des projets personnels ?", category: "Emploi", author: "Kwame Asante", authorId: "demo_user" },
 ];
 
 /* ─────────────────────────────────────────────────────────────
-   2. INITIALISATION & ÉTAT GLOBAL
+   2. ÉTAT GLOBAL
 ───────────────────────────────────────────────────────────────*/
 
 let state = {
   currentUser:    null,
   currentPage:    "home",
   currentPostId:  null,
-  searchQuery:    "",
   categoryFilter: "",
+  posts:          [],   // cache local mis à jour par onSnapshot
+  comments:       [],   // cache local mis à jour par onSnapshot
 };
 
-document.addEventListener("DOMContentLoaded", () => {
-  initStorage();
+let unsubPosts    = null;
+let unsubComments = null;
+
+/* ─────────────────────────────────────────────────────────────
+   3. INITIALISATION
+───────────────────────────────────────────────────────────────*/
+
+document.addEventListener("DOMContentLoaded", async () => {
   loadSession();
   renderNavCategories();
   renderHomeCategories();
-  renderStats();
-  renderHomePosts();
   showPage("home");
   setupNavScroll();
   setupBurgerMenu();
   setupModalClose();
+
+  // Écoute temps réel des posts et commentaires
+  listenPosts();
+  listenComments();
 });
 
 /* ─────────────────────────────────────────────────────────────
-   3. LOCALSTORAGE : HELPERS
+   4. FIREBASE : ÉCOUTE EN TEMPS RÉEL
 ───────────────────────────────────────────────────────────────*/
 
-function initStorage() {
-  if (!localStorage.getItem("yc_posts")) {
-    localStorage.setItem("yc_posts", JSON.stringify(DEMO_POSTS));
-  }
-  if (!localStorage.getItem("yc_comments")) {
-    localStorage.setItem("yc_comments", JSON.stringify(DEMO_COMMENTS));
-  }
-  if (!localStorage.getItem("yc_users")) {
-    localStorage.setItem("yc_users", JSON.stringify([]));
+function listenPosts() {
+  const q = query(collection(db, "posts"), orderBy("date", "desc"));
+  unsubPosts = onSnapshot(q, (snapshot) => {
+    state.posts = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderHomePosts();
+    renderStats();
+    renderHomeCategories();
+    if (state.currentPage === "forum")      renderForumPosts();
+    if (state.currentPage === "categories") renderFullCategories();
+    if (state.currentPage === "dashboard")  renderDashboard();
+  }, (err) => console.error("Erreur écoute posts:", err));
+}
+
+function listenComments() {
+  const q = query(collection(db, "comments"), orderBy("date", "asc"));
+  unsubComments = onSnapshot(q, (snapshot) => {
+    state.comments = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (state.currentPage === "post-detail") openPostDetail(state.currentPostId);
+    if (state.currentPage === "dashboard")   renderDashboard();
+  }, (err) => console.error("Erreur écoute commentaires:", err));
+}
+
+/* ─────────────────────────────────────────────────────────────
+   5. FIREBASE : ÉCRITURE
+───────────────────────────────────────────────────────────────*/
+
+async function addPostToFirestore(postData) {
+  try {
+    const docRef = await addDoc(collection(db, "posts"), {
+      ...postData,
+      date: serverTimestamp(),
+    });
+    return docRef.id;
+  } catch (e) {
+    console.error("Erreur ajout post:", e);
+    showNotification("Erreur lors de la publication. Réessaie.", "error");
+    return null;
   }
 }
 
-function getUsers()    { return JSON.parse(localStorage.getItem("yc_users")    || "[]"); }
-function getPosts()    { return JSON.parse(localStorage.getItem("yc_posts")    || "[]"); }
-function getComments() { return JSON.parse(localStorage.getItem("yc_comments") || "[]"); }
+async function addCommentToFirestore(commentData) {
+  try {
+    await addDoc(collection(db, "comments"), {
+      ...commentData,
+      date: serverTimestamp(),
+    });
+  } catch (e) {
+    console.error("Erreur ajout commentaire:", e);
+    showNotification("Erreur lors de la publication. Réessaie.", "error");
+  }
+}
 
-function saveUsers(data)    { localStorage.setItem("yc_users",    JSON.stringify(data)); }
-function savePosts(data)    { localStorage.setItem("yc_posts",    JSON.stringify(data)); }
-function saveComments(data) { localStorage.setItem("yc_comments", JSON.stringify(data)); }
+/* ─────────────────────────────────────────────────────────────
+   6. SESSION UTILISATEUR (LocalStorage — pas besoin de synchro)
+───────────────────────────────────────────────────────────────*/
+
+function getUsers()  { return JSON.parse(localStorage.getItem("yc_users")   || "[]"); }
+function saveUsers(d){ localStorage.setItem("yc_users", JSON.stringify(d)); }
 
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
-
-/* ─────────────────────────────────────────────────────────────
-   4. SESSION UTILISATEUR
-───────────────────────────────────────────────────────────────*/
 
 function loadSession() {
   const raw = localStorage.getItem("yc_session");
@@ -209,7 +189,7 @@ function updateNavForUser() {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   5. NAVIGATION ENTRE PAGES
+   7. NAVIGATION ENTRE PAGES
 ───────────────────────────────────────────────────────────────*/
 
 function showPage(pageId) {
@@ -248,7 +228,7 @@ function filterAndGo(category) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   6. NAVBAR : SCROLL & BURGER
+   8. NAVBAR : SCROLL & BURGER
 ───────────────────────────────────────────────────────────────*/
 
 function setupNavScroll() {
@@ -282,7 +262,7 @@ function closeMobileMenu() {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   7. MODALS : OUVERTURE / FERMETURE
+   9. MODALS
 ───────────────────────────────────────────────────────────────*/
 
 function setupModalClose() {
@@ -301,9 +281,9 @@ function openModal(type) {
 
   overlay.classList.remove("hidden");
 
-  if (type === "login")     box.innerHTML = buildLoginForm();
-  if (type === "register")  box.innerHTML = buildRegisterForm();
-  if (type === "new-post")  box.innerHTML = buildNewPostForm();
+  if (type === "login")    box.innerHTML = buildLoginForm();
+  if (type === "register") box.innerHTML = buildRegisterForm();
+  if (type === "new-post") box.innerHTML = buildNewPostForm();
 
   setTimeout(() => {
     const first = box.querySelector("input");
@@ -326,7 +306,7 @@ function openNewPostModal() {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   8. TEMPLATES HTML DES MODALS
+   10. TEMPLATES HTML DES MODALS
 ───────────────────────────────────────────────────────────────*/
 
 function buildLoginForm() {
@@ -389,7 +369,6 @@ function buildRegisterForm() {
 }
 
 function buildNewPostForm() {
-  // ✅ Plus d'emoji dans le <option>, juste le nom
   const options = CATEGORIES.map(c =>
     `<option value="${c.name}">${c.name}</option>`
   ).join("");
@@ -423,7 +402,7 @@ function buildNewPostForm() {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   9. AUTHENTIFICATION : INSCRIPTION & CONNEXION
+   11. AUTHENTIFICATION (LocalStorage)
 ───────────────────────────────────────────────────────────────*/
 
 function handleRegister(event) {
@@ -465,11 +444,11 @@ function handleRegister(event) {
   }
 
   const newUser = {
-    id:        uid(),
+    id:       uid(),
     name,
     email,
     password,
-    joinedAt:  new Date().toISOString(),
+    joinedAt: new Date().toISOString(),
   };
 
   users.push(newUser);
@@ -518,10 +497,10 @@ function logout() {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   10. FORUM : CRÉATION & AFFICHAGE DES PUBLICATIONS
+   12. FORUM : CRÉATION & AFFICHAGE DES PUBLICATIONS
 ───────────────────────────────────────────────────────────────*/
 
-function handleNewPost(event) {
+async function handleNewPost(event) {
   event.preventDefault();
 
   const title    = document.getElementById("post-title").value.trim();
@@ -545,26 +524,27 @@ function handleNewPost(event) {
   }
   if (!valid) return;
 
-  const post = {
-    id:       uid(),
+  const postData = {
     title,
     body,
     category,
     author:   state.currentUser.name,
     authorId: state.currentUser.id,
-    date:     new Date().toISOString(),
   };
 
-  const posts = getPosts();
-  posts.unshift(post);
-  savePosts(posts);
+  const btn = event.target.querySelector("button[type=submit]");
+  btn.disabled = true;
+  btn.textContent = "Publication…";
 
-  closeModal();
-  showNotification("Ta question a été publiée ! 🙌", "success");
+  const id = await addPostToFirestore(postData);
 
-  renderForumPosts();
-  renderStats();
-  renderHomePosts();
+  if (id) {
+    closeModal();
+    showNotification("Ta question a été publiée ! 🙌", "success");
+  } else {
+    btn.disabled = false;
+    btn.textContent = "Publier la question";
+  }
 }
 
 function renderForumPosts() {
@@ -573,7 +553,7 @@ function renderForumPosts() {
 
   if (!container) return;
 
-  // ✅ Plus d'emoji dans le <option> du filtre
+  // Peupler le filtre catégorie
   const sel = document.getElementById("category-filter");
   if (sel && sel.options.length <= 1) {
     CATEGORIES.forEach(c => {
@@ -585,7 +565,7 @@ function renderForumPosts() {
   }
   if (sel && state.categoryFilter) sel.value = state.categoryFilter;
 
-  let posts = getPosts();
+  let posts = [...state.posts];
 
   const query = (document.getElementById("search-input")?.value || "").toLowerCase().trim();
   if (query) {
@@ -598,8 +578,6 @@ function renderForumPosts() {
 
   const cat = document.getElementById("category-filter")?.value || state.categoryFilter;
   if (cat) posts = posts.filter(p => p.category === cat);
-
-  posts.sort((a, b) => new Date(b.date) - new Date(a.date));
 
   if (posts.length === 0) {
     container.classList.add("hidden");
@@ -616,21 +594,16 @@ function renderHomePosts() {
   const container = document.getElementById("home-posts-list");
   if (!container) return;
 
-  const posts = getPosts()
-    .sort((a, b) => new Date(b.date) - new Date(a.date))
-    .slice(0, 4);
-
+  const posts = state.posts.slice(0, 4);
   container.innerHTML = posts.map(p => buildPostCard(p)).join("");
 }
 
-/** Construit le HTML d'une carte de publication */
 function buildPostCard(post) {
-  const comments = getComments().filter(c => c.postId === post.id);
+  const comments = state.comments.filter(c => c.postId === post.id);
   const excerpt  = post.body.length > 130 ? post.body.slice(0, 130) + "…" : post.body;
   const cat      = CATEGORIES.find(c => c.name === post.category);
-  // ✅ Utilise l'image au lieu de l'emoji
   const imgTag   = cat
-    ? `<img src="${cat.image}" alt="${escapeHtml(cat.name)}" width="18" height="18" border-radius="50px" style="vertical-align:middle;margin-right:4px;" />`
+    ? `<img src="${cat.image}" alt="${escapeHtml(cat.name)}" width="18" height="18" style="vertical-align:middle;margin-right:4px;border-radius:50px;" />`
     : "📋";
 
   return `
@@ -651,40 +624,34 @@ function buildPostCard(post) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   11. RECHERCHE ET FILTRES
+   13. RECHERCHE ET FILTRES
 ───────────────────────────────────────────────────────────────*/
 
-function searchPosts() {
-  renderForumPosts();
-}
-
+function searchPosts() { renderForumPosts(); }
 function filterPosts() {
   state.categoryFilter = document.getElementById("category-filter")?.value || "";
   renderForumPosts();
 }
 
 /* ─────────────────────────────────────────────────────────────
-   12. DÉTAIL D'UNE QUESTION + COMMENTAIRES
+   14. DÉTAIL D'UNE QUESTION + COMMENTAIRES
 ───────────────────────────────────────────────────────────────*/
 
 function openPostDetail(postId) {
-  const posts = getPosts();
-  const post  = posts.find(p => p.id === postId);
+  const post = state.posts.find(p => p.id === postId);
   if (!post) return;
 
   state.currentPostId = postId;
 
   const container = document.getElementById("post-detail-content");
-  const comments  = getComments().filter(c => c.postId === postId);
+  const comments  = state.comments.filter(c => c.postId === postId);
   const cat       = CATEGORIES.find(c => c.name === post.category);
-  // ✅ Utilise l'image au lieu de l'emoji
   const imgTag    = cat
-    ? `<img src="${cat.image}" alt="${escapeHtml(cat.name)}" width="18" height="18" style="vertical-align:middle; border-radius:50px;">`
+    ? `<img src="${cat.image}" alt="${escapeHtml(cat.name)}" width="18" height="18" style="vertical-align:middle;border-radius:50px;">`
     : "📋";
 
   const commentHTML = comments.length > 0
-    ? comments.sort((a, b) => new Date(a.date) - new Date(b.date))
-        .map(c => buildCommentCard(c)).join("")
+    ? comments.map(c => buildCommentCard(c)).join("")
     : `<p class="text-muted" style="padding:16px 0">Aucune réponse pour l'instant. Sois le premier à répondre !</p>`;
 
   const addCommentHTML = state.currentUser
@@ -736,7 +703,7 @@ function buildCommentCard(comment) {
     </div>`;
 }
 
-function handleAddComment(event) {
+async function handleAddComment(event) {
   event.preventDefault();
 
   if (!state.currentUser) {
@@ -756,34 +723,33 @@ function handleAddComment(event) {
   }
   if (errEl) errEl.classList.remove("visible");
 
-  const comment = {
-    id:       uid(),
+  const btn = event.target.querySelector("button[type=submit]");
+  btn.disabled = true;
+  btn.textContent = "Publication…";
+
+  await addCommentToFirestore({
     postId:   state.currentPostId,
     author:   state.currentUser.name,
     authorId: state.currentUser.id,
     body,
-    date:     new Date().toISOString(),
-  };
-
-  const comments = getComments();
-  comments.push(comment);
-  saveComments(comments);
+  });
 
   showNotification("Réponse publiée ! 🎉", "success");
-  openPostDetail(state.currentPostId);
+  // onSnapshot mettra automatiquement à jour l'affichage
+  btn.disabled = false;
+  btn.textContent = "Publier la réponse";
 }
 
 /* ─────────────────────────────────────────────────────────────
-   13. CATÉGORIES
+   15. CATÉGORIES
 ───────────────────────────────────────────────────────────────*/
 
 function renderHomeCategories() {
   const grid = document.getElementById("home-categories-grid");
   if (!grid) return;
 
-  const posts = getPosts();
   grid.innerHTML = CATEGORIES.slice(0, 8).map(c => {
-    const count = posts.filter(p => p.category === c.name).length;
+    const count = state.posts.filter(p => p.category === c.name).length;
     return buildCategoryCard(c, count);
   }).join("");
 }
@@ -792,14 +758,12 @@ function renderFullCategories() {
   const grid = document.getElementById("full-categories-grid");
   if (!grid) return;
 
-  const posts = getPosts();
   grid.innerHTML = CATEGORIES.map(c => {
-    const count = posts.filter(p => p.category === c.name).length;
+    const count = state.posts.filter(p => p.category === c.name).length;
     return buildCategoryCard(c, count);
   }).join("");
 }
 
-/** ✅ Construit la carte d'une catégorie avec image */
 function buildCategoryCard(cat, count) {
   return `
     <div class="category-card" onclick="filterAndGo('${escapeHtml(cat.name)}')"
@@ -813,18 +777,16 @@ function buildCategoryCard(cat, count) {
     </div>`;
 }
 
-function renderNavCategories() {
-  // Déjà géré dans renderForumPosts
-}
+function renderNavCategories() {}
 
 /* ─────────────────────────────────────────────────────────────
-   14. STATISTIQUES
+   16. STATISTIQUES
 ───────────────────────────────────────────────────────────────*/
 
 function renderStats() {
   const users    = getUsers().length + 100;
-  const posts    = getPosts().length + 40;
-  const comments = getComments().length + 93;
+  const posts    = state.posts.length + 40;
+  const comments = state.comments.length + 93;
 
   animateCount("stat-members",   users);
   animateCount("stat-questions", posts);
@@ -837,12 +799,11 @@ function animateCount(id, target) {
 
   const duration = 1200;
   const start    = performance.now();
-  const from     = 0;
 
   function step(now) {
     const elapsed  = now - start;
     const progress = Math.min(elapsed / duration, 1);
-    const value    = Math.round(from + (target - from) * easeOut(progress));
+    const value    = Math.round(target * easeOut(progress));
     el.textContent = value.toLocaleString("fr-FR");
     if (progress < 1) requestAnimationFrame(step);
   }
@@ -853,7 +814,7 @@ function animateCount(id, target) {
 function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
 
 /* ─────────────────────────────────────────────────────────────
-   15. TABLEAU DE BORD UTILISATEUR
+   17. TABLEAU DE BORD
 ───────────────────────────────────────────────────────────────*/
 
 function renderDashboard() {
@@ -864,8 +825,8 @@ function renderDashboard() {
   }
 
   const user     = state.currentUser;
-  const posts    = getPosts().filter(p => p.authorId === user.id);
-  const comments = getComments().filter(c => c.authorId === user.id);
+  const posts    = state.posts.filter(p => p.authorId === user.id);
+  const comments = state.comments.filter(c => c.authorId === user.id);
 
   document.getElementById("dashboard-greeting").textContent =
     `Bonjour, ${user.name.split(" ")[0]} 👋`;
@@ -887,8 +848,7 @@ function renderDashboard() {
   } else {
     postsContainer.classList.remove("hidden");
     postsEmpty.classList.add("hidden");
-    const sorted = posts.sort((a, b) => new Date(b.date) - new Date(a.date));
-    postsContainer.innerHTML = sorted.map(p => buildPostCard(p)).join("");
+    postsContainer.innerHTML = posts.map(p => buildPostCard(p)).join("");
   }
 
   const commentsContainer = document.getElementById("dash-comments-list");
@@ -901,13 +861,10 @@ function renderDashboard() {
     commentsContainer.classList.remove("hidden");
     commentsEmpty.classList.add("hidden");
 
-    const recent = comments
-      .sort((a, b) => new Date(b.date) - new Date(a.date))
-      .slice(0, 8);
+    const recent = comments.slice(-8).reverse();
 
-    const allPosts = getPosts();
     commentsContainer.innerHTML = recent.map(c => {
-      const post = allPosts.find(p => p.id === c.postId);
+      const post = state.posts.find(p => p.id === c.postId);
       const postTitle = post ? post.title : "Question supprimée";
       return `
         <div class="comment-card" style="cursor:pointer" onclick="openPostDetail('${c.postId}')"
@@ -923,20 +880,7 @@ function renderDashboard() {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   16. CONTACT
-───────────────────────────────────────────────────────────────*/
-
-function submitContact(event) {
-  event.preventDefault();
-  const name = document.getElementById("contact-name").value.trim();
-
-  showNotification(`Merci ${name} ! Ton message a bien été envoyé. On te répond sous 48h. ✉️`, "success");
-
-  document.getElementById("contact-form").reset();
-}
-
-/* ─────────────────────────────────────────────────────────────
-   17. NOTIFICATIONS VISUELLES
+   18. NOTIFICATIONS
 ───────────────────────────────────────────────────────────────*/
 
 function showNotification(message, type = "info", duration = 3500) {
@@ -956,7 +900,7 @@ function showNotification(message, type = "info", duration = 3500) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   18. UTILITAIRES
+   19. UTILITAIRES
 ───────────────────────────────────────────────────────────────*/
 
 function isValidEmail(email) {
@@ -982,15 +926,23 @@ function clearErrors(ids) {
 
 function formatDate(isoString) {
   if (!isoString) return "–";
-  const d    = new Date(isoString);
+  // Firebase serverTimestamp peut être un objet Timestamp
+  let d;
+  if (isoString && typeof isoString.toDate === "function") {
+    d = isoString.toDate();
+  } else {
+    d = new Date(isoString);
+  }
+  if (isNaN(d)) return "–";
+
   const now  = new Date();
   const diff = Math.floor((now - d) / 1000);
 
-  if (diff < 60)          return "À l'instant";
-  if (diff < 3600)        return `Il y a ${Math.floor(diff / 60)} min`;
-  if (diff < 86400)       return `Il y a ${Math.floor(diff / 3600)} h`;
-  if (diff < 86400 * 7)   return `Il y a ${Math.floor(diff / 86400)} j`;
-  if (diff < 86400 * 30)  return `Il y a ${Math.floor(diff / (86400 * 7))} sem.`;
+  if (diff < 60)         return "À l'instant";
+  if (diff < 3600)       return `Il y a ${Math.floor(diff / 60)} min`;
+  if (diff < 86400)      return `Il y a ${Math.floor(diff / 3600)} h`;
+  if (diff < 86400 * 7)  return `Il y a ${Math.floor(diff / 86400)} j`;
+  if (diff < 86400 * 30) return `Il y a ${Math.floor(diff / (86400 * 7))} sem.`;
 
   return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
 }
