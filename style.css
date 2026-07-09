@@ -317,6 +317,275 @@ select {
     }
 }
 
+/* ─── CLOCHE DE NOTIFICATIONS ───────────────────────────────── */
+.notif-bell-wrap {
+    position: relative;
+    display: inline-flex;
+}
+
+.notif-bell-btn {
+    position: relative;
+    background: transparent;
+    border: none;
+    font-size: 1.25rem;
+    padding: 8px 10px;
+    border-radius: var(--radius-md);
+    transition: background var(--transition);
+}
+
+.notif-bell-btn:hover {
+    background: var(--gray-100);
+}
+
+.notif-badge,
+.mod-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: var(--danger);
+    color: var(--white);
+    font-size: .65rem;
+    font-weight: 700;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.mod-badge {
+    position: static;
+    display: inline-flex;
+    margin-left: 4px;
+    vertical-align: middle;
+}
+
+.notif-dropdown {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    width: 340px;
+    max-width: calc(100vw - 32px);
+    max-height: 420px;
+    overflow-y: auto;
+    background: var(--white);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    z-index: 1200;
+    animation: scaleIn .18s ease;
+}
+
+.notif-dropdown-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.notif-dropdown-header h4 {
+    font-family: var(--font-display);
+    font-size: 1rem;
+}
+
+.notif-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--gray-100);
+    cursor: pointer;
+    transition: background var(--transition);
+}
+
+.notif-item:hover {
+    background: var(--gray-50);
+}
+
+.notif-item.unread {
+    background: var(--blue-light);
+}
+
+.notif-item p {
+    font-size: .875rem;
+    color: var(--gray-900);
+    margin-bottom: 4px;
+}
+
+.notif-item-date {
+    font-size: .75rem;
+    color: var(--gray-600);
+}
+
+.notif-empty {
+    padding: 24px 16px;
+    text-align: center;
+    color: var(--gray-600);
+    font-size: .875rem;
+}
+
+/* ─── UPLOAD D'IMAGE DANS LES RÉPONSES ──────────────────────── */
+.image-upload-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border: 1.5px dashed var(--gray-400);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: .875rem;
+    color: var(--gray-700);
+    transition: border-color var(--transition), color var(--transition);
+}
+
+.image-upload-label:hover {
+    border-color: var(--blue);
+    color: var(--blue);
+}
+
+.comment-image-preview-wrap {
+    margin-top: 12px;
+    position: relative;
+    display: inline-block;
+}
+
+.comment-image-preview {
+    max-width: 220px;
+    max-height: 220px;
+    border-radius: var(--radius-md);
+    display: block;
+    box-shadow: var(--shadow-sm);
+}
+
+.image-remove-btn {
+    margin-top: 8px;
+    background: transparent;
+    color: var(--danger);
+    font-size: .8125rem;
+    font-weight: 600;
+    display: block;
+}
+
+.comment-image {
+    margin-top: 12px;
+    max-width: 100%;
+    max-height: 320px;
+    border-radius: var(--radius-md);
+    cursor: zoom-in;
+    box-shadow: var(--shadow-sm);
+}
+
+.modal-box-lightbox {
+    background: transparent;
+    box-shadow: none;
+    max-width: 90vw;
+    padding: 0;
+    position: relative;
+}
+
+.lightbox-image {
+    max-width: 90vw;
+    max-height: 85vh;
+    border-radius: var(--radius-md);
+    margin: 0 auto;
+}
+
+.modal-box-lightbox .modal-close {
+    position: absolute;
+    top: -40px;
+    right: 0;
+    background: var(--white);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+}
+
+/* ─── SIGNALEMENT & MODÉRATION ──────────────────────────────── */
+.post-detail-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--gray-200);
+}
+
+.comment-actions {
+    display: flex;
+    gap: 16px;
+    margin-top: 10px;
+}
+
+.report-link {
+    background: transparent;
+    color: var(--gray-600);
+    font-size: .8125rem;
+    font-weight: 600;
+    padding: 0;
+}
+
+.report-link:hover {
+    color: var(--blue);
+    text-decoration: underline;
+}
+
+.report-link-danger:hover {
+    color: var(--danger);
+}
+
+.btn-sm {
+    padding: 8px 14px;
+    font-size: .8125rem;
+}
+
+.reports-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 24px 0 60px;
+}
+
+.report-card {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+}
+
+.report-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.report-reason {
+    margin-bottom: 6px;
+    font-size: .9375rem;
+}
+
+.report-reporter {
+    font-size: .8125rem;
+    color: var(--gray-600);
+    margin-bottom: 12px;
+}
+
+.report-content-preview {
+    background: var(--gray-50);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    font-size: .875rem;
+    color: var(--gray-700);
+    margin-bottom: 14px;
+}
+
+.report-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
 /* ─── MODAL ─────────────────────────────────────────────────── */
 .modal-overlay {
     position: fixed;

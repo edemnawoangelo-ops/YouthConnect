@@ -4,7 +4,11 @@ const CACHE_NAME = 'mon-site-cache-v1';
 const FICHIERS_A_METTRE_EN_CACHE = [
     '/',
     '/index.html',
-    '/manifest.json'
+    '/manifest.json',
+    '/style.css',
+    '/script.js',
+    '/icon-192.png',
+    '/icon-512.png'
 ];
 
 // Installation : on met en cache les fichiers essentiels

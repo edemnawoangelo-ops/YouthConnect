@@ -1,7 +1,7 @@
 {
-    "name": "Mon Site en Application",
-    "short_name": "MonApp",
-    "description": "Une description courte de mon application",
+    "name": "YouthConnect – Plateforme d'entraide entre jeunes",
+    "short_name": "YouthConnect",
+    "description": "Forum d'entraide pour la jeunesse africaine et francophone : études, tech, entrepreneuriat.",
     "start_url": "/",
     "scope": "/",
     "display": "standalone",
@@ -9,13 +9,13 @@
     "theme_color": "#1a1a2e",
     "icons": [
         {
-            "src": "/icons/icon-192.png",
+            "src": "/icon-192.png",
             "sizes": "192x192",
             "type": "image/png",
             "purpose": "any maskable"
         },
         {
-            "src": "/icons/icon-512.png",
+            "src": "/icon-512.png",
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "any maskable"

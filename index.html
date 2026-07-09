@@ -47,6 +47,9 @@
         <a href="#" onclick="showPage('categories')" class="nav-item" data-page="categories">Catégories</a>
         <a href="#" onclick="showPage('about')" class="nav-item" data-page="about">À propos</a>
         <a href="#" onclick="showPage('contact')" class="nav-item" data-page="contact">Contact</a>
+        <a href="#" onclick="showPage('moderation')" class="nav-item admin-only hidden" data-page="moderation">
+          Modération <span class="mod-badge hidden" id="mod-badge">0</span>
+        </a>
         <!-- Boutons visibles uniquement dans le menu mobile -->
         <div class="nav-mobile-actions">
           <div id="guest-actions-mobile">
@@ -55,6 +58,9 @@
           </div>
           <div id="user-actions-mobile" class="hidden">
             <button class="btn btn-ghost" onclick="showPage('dashboard')" id="welcome-btn-mobile">Mon profil</button>
+            <button class="btn btn-ghost" onclick="toggleNotifDropdown(event)">
+              🔔 Notifications <span class="notif-badge hidden" id="notif-badge-mobile">0</span>
+            </button>
             <button class="btn btn-outline-danger" onclick="logout()">Déconnexion</button>
           </div>
         </div>
@@ -67,6 +73,19 @@
           <button class="btn btn-primary" onclick="openModal('register')">Inscription</button>
         </div>
         <div id="user-actions" class="hidden">
+          <div class="notif-bell-wrap">
+            <button class="notif-bell-btn" id="notif-bell-btn" onclick="toggleNotifDropdown(event)" aria-label="Notifications">
+              🔔
+              <span class="notif-badge hidden" id="notif-badge">0</span>
+            </button>
+            <div class="notif-dropdown hidden" id="notif-dropdown">
+              <div class="notif-dropdown-header">
+                <h4>Notifications</h4>
+                <button class="link-btn" onclick="markAllNotificationsRead()">Tout marquer comme lu</button>
+              </div>
+              <div id="notif-dropdown-list"></div>
+            </div>
+          </div>
           <button class="btn btn-ghost" onclick="showPage('dashboard')" id="welcome-btn">Mon profil</button>
           <button class="btn btn-outline-danger" onclick="logout()">Déconnexion</button>
         </div>
@@ -561,6 +580,24 @@
             <p>Tu n'as pas encore répondu à une question.</p>
           </div>
         </div>
+      </div>
+    </div>
+  </main>
+
+  <!--PAGE : MODÉRATION (admin uniquement)-->
+  <main id="page-moderation" class="page hidden">
+    <div class="page-hero page-hero-blue">
+      <div class="container">
+        <h1>Modération</h1>
+        <p>Signalements en attente de traitement par l'équipe.</p>
+      </div>
+    </div>
+    <div class="container">
+      <div id="moderation-list" class="reports-list"><!-- Injecté par JS --></div>
+      <div id="moderation-empty" class="empty-state hidden">
+        <div class="empty-icon">✅</div>
+        <h3>Aucun signalement en attente</h3>
+        <p>Tout est calme, bon travail à la communauté !</p>
       </div>
     </div>
   </main>

@@ -11,8 +11,11 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
   getFirestore, collection, addDoc, getDocs, query, orderBy,
-  onSnapshot, doc, deleteDoc, serverTimestamp, where
+  onSnapshot, doc, deleteDoc, updateDoc, serverTimestamp, where
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import {
+  getStorage, ref, uploadBytes, getDownloadURL
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDg7yT-LOy8kwzOBGEVkl1ipxvcWFUWIGQ",
@@ -25,6 +28,18 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const storage = getStorage(app);
+
+/* ─────────────────────────────────────────────────────────────
+   MODÉRATION : liste des emails administrateurs
+   Ajoute ici l'email (celui utilisé à l'inscription sur YouthConnect)
+   de chaque personne qui doit avoir accès au panneau de modération.
+───────────────────────────────────────────────────────────────*/
+const ADMIN_EMAILS = ["edemnawokoffiangelo@gmail.com"];
+
+function isAdmin(user) {
+  return !!user && ADMIN_EMAILS.includes((user.email || "").toLowerCase());
+}
 
 /* ─────────────────────────────────────────────────────────────
    1. DONNÉES : CATÉGORIES
@@ -63,10 +78,14 @@ let state = {
   categoryFilter: "",
   posts: [],   // cache local mis à jour par onSnapshot
   comments: [],   // cache local mis à jour par onSnapshot
+  notifications: [],   // notifications de l'utilisateur connecté
+  reports: [],   // signalements (admin uniquement)
 };
 
 let unsubPosts = null;
 let unsubComments = null;
+let unsubNotifications = null;
+let unsubReports = null;
 
 /* ─────────────────────────────────────────────────────────────
    3. INITIALISATION
@@ -80,10 +99,18 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupNavScroll();
   setupBurgerMenu();
   setupModalClose();
+  setupNotifDropdownClose();
 
   // Écoute temps réel des posts et commentaires
   listenPosts();
   listenComments();
+
+  // Si une session est active, démarrer les écoutes personnelles
+  if (state.currentUser) {
+    listenNotifications();
+    if (isAdmin(state.currentUser)) listenReports();
+  }
+  updateAdminUI();
 });
 
 /* ─────────────────────────────────────────────────────────────
@@ -110,6 +137,37 @@ function listenComments() {
     if (state.currentPage === "post-detail") openPostDetail(state.currentPostId);
     if (state.currentPage === "dashboard") renderDashboard();
   }, (err) => console.error("Erreur écoute commentaires:", err));
+}
+
+function listenNotifications() {
+  if (!state.currentUser) return;
+  if (unsubNotifications) unsubNotifications();
+
+  const q = query(collection(db, "notifications"), where("userId", "==", state.currentUser.id));
+  unsubNotifications = onSnapshot(q, (snapshot) => {
+    state.notifications = snapshot.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => toMillis(b.date) - toMillis(a.date));
+    renderNotifBell();
+  }, (err) => console.error("Erreur écoute notifications:", err));
+}
+
+function listenReports() {
+  if (unsubReports) unsubReports();
+
+  const q = query(collection(db, "reports"), orderBy("date", "desc"));
+  unsubReports = onSnapshot(q, (snapshot) => {
+    state.reports = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (state.currentPage === "moderation") renderModeration();
+    renderModBadge();
+  }, (err) => console.error("Erreur écoute signalements:", err));
+}
+
+function toMillis(dateVal) {
+  if (!dateVal) return 0;
+  if (typeof dateVal.toMillis === "function") return dateVal.toMillis();
+  const d = new Date(dateVal);
+  return isNaN(d) ? 0 : d.getTime();
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -139,6 +197,50 @@ async function addCommentToFirestore(commentData) {
   } catch (e) {
     console.error("Erreur ajout commentaire:", e);
     showNotification("Erreur lors de la publication. Réessaie.", "error");
+  }
+}
+
+/* Upload d'une image (réponse) vers Firebase Storage → renvoie l'URL publique */
+async function uploadCommentImage(file) {
+  try {
+    const path = `comment-images/${uid()}-${file.name}`;
+    const storageRef = ref(storage, path);
+    await uploadBytes(storageRef, file);
+    return await getDownloadURL(storageRef);
+  } catch (e) {
+    console.error("Erreur upload image:", e);
+    showNotification("L'image n'a pas pu être envoyée (réessaie sans image).", "error");
+    return null;
+  }
+}
+
+/* Crée une notification en base pour un utilisateur donné */
+async function createNotification(userId, type, postId, postTitle, fromName) {
+  if (!userId) return;
+  try {
+    await addDoc(collection(db, "notifications"), {
+      userId, type, postId, postTitle, fromName,
+      read: false,
+      date: serverTimestamp(),
+    });
+  } catch (e) {
+    console.error("Erreur création notification:", e);
+  }
+}
+
+/* Enregistre un signalement (post ou commentaire) pour modération */
+async function addReportToFirestore(reportData) {
+  try {
+    await addDoc(collection(db, "reports"), {
+      ...reportData,
+      status: "pending",
+      date: serverTimestamp(),
+    });
+    return true;
+  } catch (e) {
+    console.error("Erreur ajout signalement:", e);
+    showNotification("Erreur lors de l'envoi du signalement.", "error");
+    return false;
   }
 }
 
@@ -217,6 +319,7 @@ function showPage(pageId) {
   if (pageId === "categories") renderFullCategories();
   if (pageId === "dashboard") renderDashboard();
   if (pageId === "home") { renderHomePosts(); renderStats(); }
+  if (pageId === "moderation") renderModeration();
 }
 
 function filterAndGo(category) {
@@ -486,6 +589,9 @@ function loginUser(user) {
   state.currentUser = user;
   localStorage.setItem("yc_session", JSON.stringify(user));
   updateNavForUser();
+  listenNotifications();
+  updateAdminUI();
+  if (isAdmin(user)) listenReports();
 }
 
 function logout() {
@@ -494,6 +600,14 @@ function logout() {
   updateNavForUser();
   showPage("home");
   showNotification("Tu as été déconnecté(e).", "info");
+
+  if (unsubNotifications) { unsubNotifications(); unsubNotifications = null; }
+  if (unsubReports) { unsubReports(); unsubReports = null; }
+  state.notifications = [];
+  state.reports = [];
+  renderNotifBell();
+  updateAdminUI();
+  closeNotifDropdown();
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -664,6 +778,16 @@ function openPostDetail(postId) {
               placeholder="Partage ton expérience ou tes conseils…" required></textarea>
             <p class="form-error" id="err-comment"></p>
           </div>
+          <div class="form-group">
+            <label for="comment-image" class="image-upload-label">
+              🖼️ Ajouter une image (facultatif)
+              <input type="file" id="comment-image" accept="image/*" onchange="previewCommentImage(event)" hidden />
+            </label>
+            <div id="comment-image-preview-wrap" class="comment-image-preview-wrap hidden">
+              <img id="comment-image-preview" class="comment-image-preview" alt="Aperçu de l'image" />
+              <button type="button" class="image-remove-btn" onclick="removeCommentImagePreview()">✕ Retirer l'image</button>
+            </div>
+          </div>
           <button type="submit" class="btn btn-primary">Publier la réponse</button>
         </form>
       </div>`
@@ -671,6 +795,14 @@ function openPostDetail(postId) {
         <p style="margin-bottom:16px;color:var(--gray-600)">Connecte-toi pour répondre à cette question.</p>
         <button class="btn btn-primary" onclick="openModal('login')">Se connecter</button>
        </div>`;
+
+  const adminDeleteBtn = isAdmin(state.currentUser)
+    ? `<button class="btn btn-outline-danger btn-sm" onclick="deletePost('${post.id}')">🗑️ Supprimer (admin)</button>`
+    : "";
+
+  const reportBtn = state.currentUser
+    ? `<button class="report-link" onclick="openReportModal('post','${post.id}','${post.id}')">🚩 Signaler cette question</button>`
+    : "";
 
   container.innerHTML = `
     <button class="post-detail-back" onclick="showPage('forum')">← Retour au forum</button>
@@ -683,6 +815,10 @@ function openPostDetail(postId) {
         <span>📅 ${formatDate(post.date)}</span>
         <span>💬 ${comments.length} réponse${comments.length !== 1 ? "s" : ""}</span>
       </div>
+      <div class="post-detail-actions">
+        ${reportBtn}
+        ${adminDeleteBtn}
+      </div>
     </div>
 
     <h2 class="comments-section-title">Réponses (${comments.length})</h2>
@@ -692,7 +828,48 @@ function openPostDetail(postId) {
   showPage("post-detail");
 }
 
+function previewCommentImage(event) {
+  const file = event.target.files?.[0];
+  const wrap = document.getElementById("comment-image-preview-wrap");
+  const img = document.getElementById("comment-image-preview");
+  if (!file) { wrap.classList.add("hidden"); return; }
+
+  if (!file.type.startsWith("image/")) {
+    showNotification("Merci de choisir un fichier image.", "error");
+    event.target.value = "";
+    wrap.classList.add("hidden");
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    img.src = e.target.result;
+    wrap.classList.remove("hidden");
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeCommentImagePreview() {
+  const fileInput = document.getElementById("comment-image");
+  const wrap = document.getElementById("comment-image-preview-wrap");
+  if (fileInput) fileInput.value = "";
+  if (wrap) wrap.classList.add("hidden");
+}
+
 function buildCommentCard(comment) {
+  const imageHTML = comment.imageUrl
+    ? `<img src="${comment.imageUrl}" alt="Image jointe à la réponse" class="comment-image"
+         onclick="openImageLightbox('${comment.imageUrl}')" />`
+    : "";
+
+  const actions = [];
+  if (state.currentUser) {
+    actions.push(`<button class="report-link" onclick="openReportModal('comment','${comment.id}','${comment.postId}')">🚩 Signaler</button>`);
+  }
+  if (isAdmin(state.currentUser)) {
+    actions.push(`<button class="report-link report-link-danger" onclick="deleteComment('${comment.id}')">🗑️ Supprimer (admin)</button>`);
+  }
+
   return `
     <div class="comment-card">
       <div class="comment-header">
@@ -700,7 +877,19 @@ function buildCommentCard(comment) {
         <span class="comment-date">${formatDate(comment.date)}</span>
       </div>
       <p class="comment-body">${escapeHtml(comment.body)}</p>
+      ${imageHTML}
+      ${actions.length ? `<div class="comment-actions">${actions.join("")}</div>` : ""}
     </div>`;
+}
+
+function openImageLightbox(url) {
+  const overlay = document.getElementById("modal-overlay");
+  const box = document.getElementById("modal-box");
+  overlay.classList.remove("hidden");
+  box.classList.add("modal-box-lightbox");
+  box.innerHTML = `
+    <button class="modal-close" onclick="closeModal(); document.getElementById('modal-box').classList.remove('modal-box-lightbox');" aria-label="Fermer">✕</button>
+    <img src="${url}" alt="Image en grand format" class="lightbox-image" />`;
 }
 
 async function handleAddComment(event) {
@@ -713,6 +902,8 @@ async function handleAddComment(event) {
 
   const body = document.getElementById("comment-body")?.value.trim();
   const errEl = document.getElementById("err-comment");
+  const fileInput = document.getElementById("comment-image");
+  const file = fileInput?.files?.[0] || null;
 
   if (!body || body.length < 10) {
     if (errEl) {
@@ -721,23 +912,48 @@ async function handleAddComment(event) {
     }
     return;
   }
+  if (file && file.size > 5 * 1024 * 1024) {
+    if (errEl) {
+      errEl.textContent = "L'image ne doit pas dépasser 5 Mo.";
+      errEl.classList.add("visible");
+    }
+    return;
+  }
   if (errEl) errEl.classList.remove("visible");
 
   const btn = event.target.querySelector("button[type=submit]");
   btn.disabled = true;
+  btn.textContent = file ? "Envoi de l'image…" : "Publication…";
+
+  let imageUrl = null;
+  if (file) {
+    imageUrl = await uploadCommentImage(file);
+  }
+
   btn.textContent = "Publication…";
 
-  await addCommentToFirestore({
+  const post = state.posts.find(p => p.id === state.currentPostId);
+
+  const commentData = {
     postId: state.currentPostId,
     author: state.currentUser.name,
     authorId: state.currentUser.id,
     body,
-  });
+  };
+  if (imageUrl) commentData.imageUrl = imageUrl;
+
+  await addCommentToFirestore(commentData);
+
+  // Notifie l'auteur de la question (sauf s'il répond à sa propre question)
+  if (post && post.authorId !== state.currentUser.id) {
+    createNotification(post.authorId, "reply", post.id, post.title, state.currentUser.name);
+  }
 
   showNotification("Réponse publiée ! 🎉", "success");
   // onSnapshot mettra automatiquement à jour l'affichage
   btn.disabled = false;
   btn.textContent = "Publier la réponse";
+  removeCommentImagePreview();
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -900,6 +1116,254 @@ function showNotification(message, type = "info", duration = 3500) {
 }
 
 /* ─────────────────────────────────────────────────────────────
+   18b. CLOCHE DE NOTIFICATIONS (réponses à mes questions)
+───────────────────────────────────────────────────────────────*/
+
+function renderNotifBell() {
+  const unread = state.notifications.filter(n => !n.read).length;
+
+  [document.getElementById("notif-badge"), document.getElementById("notif-badge-mobile")].forEach(el => {
+    if (!el) return;
+    if (unread > 0) {
+      el.textContent = unread > 9 ? "9+" : String(unread);
+      el.classList.remove("hidden");
+    } else {
+      el.classList.add("hidden");
+    }
+  });
+
+  const list = document.getElementById("notif-dropdown-list");
+  if (list) {
+    list.innerHTML = state.notifications.length
+      ? state.notifications.slice(0, 20).map(n => `
+          <div class="notif-item ${n.read ? "" : "unread"}" onclick="openNotification('${n.id}','${n.postId}')">
+            <p>💬 <strong>${escapeHtml(n.fromName || "Quelqu'un")}</strong> a répondu à
+              « ${escapeHtml((n.postTitle || "").slice(0, 50))}${(n.postTitle || "").length > 50 ? "…" : ""} »</p>
+            <span class="notif-item-date">${formatDate(n.date)}</span>
+          </div>`).join("")
+      : `<div class="notif-empty">Pas encore de notification.</div>`;
+  }
+}
+
+function toggleNotifDropdown(event) {
+  event?.stopPropagation();
+  if (!state.currentUser) { openModal("login"); return; }
+  const dropdown = document.getElementById("notif-dropdown");
+  if (dropdown) dropdown.classList.toggle("hidden");
+}
+
+function closeNotifDropdown() {
+  const dropdown = document.getElementById("notif-dropdown");
+  if (dropdown) dropdown.classList.add("hidden");
+}
+
+function setupNotifDropdownClose() {
+  document.addEventListener("click", (e) => {
+    const dropdown = document.getElementById("notif-dropdown");
+    const bell = document.getElementById("notif-bell-btn");
+    if (!dropdown || dropdown.classList.contains("hidden")) return;
+    if (!dropdown.contains(e.target) && e.target !== bell && !bell?.contains(e.target)) {
+      closeNotifDropdown();
+    }
+  });
+}
+
+async function openNotification(notifId, postId) {
+  closeNotifDropdown();
+  const notif = state.notifications.find(n => n.id === notifId);
+  if (notif && !notif.read) {
+    try { await updateDoc(doc(db, "notifications", notifId), { read: true }); }
+    catch (e) { console.error("Erreur maj notification:", e); }
+  }
+  openPostDetail(postId);
+}
+
+async function markAllNotificationsRead() {
+  const unread = state.notifications.filter(n => !n.read);
+  if (unread.length === 0) return;
+  try {
+    await Promise.all(unread.map(n => updateDoc(doc(db, "notifications", n.id), { read: true })));
+  } catch (e) {
+    console.error("Erreur maj notifications:", e);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   18c. MODÉRATION (signalements, suppression, panneau admin)
+───────────────────────────────────────────────────────────────*/
+
+function updateAdminUI() {
+  const admin = isAdmin(state.currentUser);
+  document.querySelectorAll(".admin-only").forEach(el => {
+    el.classList.toggle("hidden", !admin);
+  });
+  renderModBadge();
+}
+
+function renderModBadge() {
+  if (!isAdmin(state.currentUser)) return;
+  const pending = state.reports.filter(r => r.status === "pending").length;
+  [document.getElementById("mod-badge")].forEach(el => {
+    if (!el) return;
+    if (pending > 0) {
+      el.textContent = pending > 9 ? "9+" : String(pending);
+      el.classList.remove("hidden");
+    } else {
+      el.classList.add("hidden");
+    }
+  });
+}
+
+function openReportModal(type, targetId, postId) {
+  if (!state.currentUser) { openModal("login"); return; }
+  const overlay = document.getElementById("modal-overlay");
+  const box = document.getElementById("modal-box");
+  overlay.classList.remove("hidden");
+  box.innerHTML = `
+    <div class="modal-header">
+      <h2 class="modal-title">Signaler ${type === "post" ? "cette question" : "cette réponse"}</h2>
+      <button class="modal-close" onclick="closeModal()" aria-label="Fermer">✕</button>
+    </div>
+    <form onsubmit="submitReport(event,'${type}','${targetId}','${postId}')" novalidate>
+      <div class="form-group">
+        <label for="report-reason">Pourquoi signales-tu ce contenu ?</label>
+        <textarea id="report-reason" class="form-input form-textarea" rows="4"
+          placeholder="Contenu inapproprié, spam, harcèlement…" required></textarea>
+        <p class="form-error" id="err-report"></p>
+      </div>
+      <button type="submit" class="btn btn-primary btn-full">Envoyer le signalement</button>
+    </form>`;
+}
+
+async function submitReport(event, type, targetId, postId) {
+  event.preventDefault();
+  const reason = document.getElementById("report-reason")?.value.trim();
+  const errEl = document.getElementById("err-report");
+
+  if (!reason || reason.length < 5) {
+    if (errEl) { errEl.textContent = "Merci de préciser la raison (5 caractères min)."; errEl.classList.add("visible"); }
+    return;
+  }
+
+  const post = state.posts.find(p => p.id === postId);
+
+  const ok = await addReportToFirestore({
+    type, targetId, postId,
+    postTitle: post ? post.title : "",
+    reporterId: state.currentUser.id,
+    reporterName: state.currentUser.name,
+    reason,
+  });
+
+  if (ok) {
+    closeModal();
+    showNotification("Signalement envoyé, merci de contribuer à la sécurité de la communauté. 🙏", "success");
+  }
+}
+
+async function deletePost(postId) {
+  if (!isAdmin(state.currentUser)) return;
+  if (!confirm("Supprimer définitivement cette question et toutes ses réponses ?")) return;
+
+  try {
+    await deleteDoc(doc(db, "posts", postId));
+    const relatedComments = state.comments.filter(c => c.postId === postId);
+    await Promise.all(relatedComments.map(c => deleteDoc(doc(db, "comments", c.id))));
+    showNotification("Question supprimée.", "success");
+    showPage("forum");
+  } catch (e) {
+    console.error("Erreur suppression post:", e);
+    showNotification("Erreur lors de la suppression.", "error");
+  }
+}
+
+async function deleteComment(commentId) {
+  if (!isAdmin(state.currentUser)) return;
+  if (!confirm("Supprimer définitivement cette réponse ?")) return;
+
+  try {
+    await deleteDoc(doc(db, "comments", commentId));
+    showNotification("Réponse supprimée.", "success");
+    if (state.currentPage === "post-detail") openPostDetail(state.currentPostId);
+  } catch (e) {
+    console.error("Erreur suppression commentaire:", e);
+    showNotification("Erreur lors de la suppression.", "error");
+  }
+}
+
+async function resolveReport(reportId, action) {
+  if (!isAdmin(state.currentUser)) return;
+  const report = state.reports.find(r => r.id === reportId);
+  if (!report) return;
+
+  try {
+    if (action === "delete") {
+      if (report.type === "post") {
+        await deleteDoc(doc(db, "posts", report.targetId));
+        const relatedComments = state.comments.filter(c => c.postId === report.targetId);
+        await Promise.all(relatedComments.map(c => deleteDoc(doc(db, "comments", c.id))));
+      } else {
+        await deleteDoc(doc(db, "comments", report.targetId));
+      }
+      await updateDoc(doc(db, "reports", reportId), { status: "resolved" });
+      showNotification("Contenu supprimé, signalement traité.", "success");
+    } else {
+      await updateDoc(doc(db, "reports", reportId), { status: "dismissed" });
+      showNotification("Signalement rejeté.", "info");
+    }
+  } catch (e) {
+    console.error("Erreur traitement signalement:", e);
+    showNotification("Erreur lors du traitement du signalement.", "error");
+  }
+}
+
+function renderModeration() {
+  if (!isAdmin(state.currentUser)) { showPage("home"); return; }
+
+  const container = document.getElementById("moderation-list");
+  const emptyEl = document.getElementById("moderation-empty");
+  if (!container) return;
+
+  const pending = state.reports.filter(r => r.status === "pending");
+
+  if (pending.length === 0) {
+    container.classList.add("hidden");
+    emptyEl.classList.remove("hidden");
+    return;
+  }
+
+  container.classList.remove("hidden");
+  emptyEl.classList.add("hidden");
+
+  container.innerHTML = pending.map(r => {
+    let contentPreview = "Contenu introuvable (déjà supprimé).";
+    if (r.type === "post") {
+      const p = state.posts.find(p => p.id === r.targetId);
+      if (p) contentPreview = `<strong>${escapeHtml(p.title)}</strong><br>${escapeHtml(p.body.slice(0, 200))}${p.body.length > 200 ? "…" : ""}`;
+    } else {
+      const c = state.comments.find(c => c.id === r.targetId);
+      if (c) contentPreview = escapeHtml(c.body.slice(0, 200)) + (c.body.length > 200 ? "…" : "");
+    }
+
+    return `
+      <div class="report-card">
+        <div class="report-card-header">
+          <span class="post-badge">${r.type === "post" ? "❓ Question" : "💬 Réponse"}</span>
+          <span class="comment-date">${formatDate(r.date)}</span>
+        </div>
+        <p class="report-reason"><strong>Raison :</strong> ${escapeHtml(r.reason)}</p>
+        <p class="report-reporter">Signalé par ${escapeHtml(r.reporterName)}</p>
+        <div class="report-content-preview">${contentPreview}</div>
+        <div class="report-card-actions">
+          <button class="btn btn-ghost btn-sm" onclick="openPostDetail('${r.postId}')">👁️ Voir le contexte</button>
+          <button class="btn btn-outline-danger btn-sm" onclick="resolveReport('${r.id}','delete')">🗑️ Supprimer le contenu</button>
+          <button class="btn btn-ghost btn-sm" onclick="resolveReport('${r.id}','dismiss')">✕ Rejeter le signalement</button>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+/* ─────────────────────────────────────────────────────────────
    19. UTILITAIRES
 ───────────────────────────────────────────────────────────────*/
 
@@ -975,6 +1439,17 @@ window.handleAddComment = handleAddComment;
 window.searchPosts = searchPosts;
 window.filterPosts = filterPosts;
 window.logout = logout;
+window.previewCommentImage = previewCommentImage;
+window.removeCommentImagePreview = removeCommentImagePreview;
+window.openImageLightbox = openImageLightbox;
+window.toggleNotifDropdown = toggleNotifDropdown;
+window.openNotification = openNotification;
+window.markAllNotificationsRead = markAllNotificationsRead;
+window.openReportModal = openReportModal;
+window.submitReport = submitReport;
+window.deletePost = deletePost;
+window.deleteComment = deleteComment;
+window.resolveReport = resolveReport;
 
 (function () {
   let deferredPrompt; // stocke l'événement d'installation
