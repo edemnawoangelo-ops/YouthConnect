@@ -1452,7 +1452,7 @@ window.deleteComment = deleteComment;
 window.resolveReport = resolveReport;
 
 (function () {
-  let deferredPrompt; // stocke l'événement d'installation
+  let deferredPrompt; // stocke l'événement d'installation (si le navigateur le propose)
   const installBtn = document.getElementById('install-btn');
   const installToast = document.getElementById('install-toast');
 
@@ -1461,25 +1461,74 @@ window.resolveReport = resolveReport;
     return;
   }
 
-  // Le navigateur signale que l'app est installable
+  const dejaInstallee = window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true; // iOS Safari
+
+  // Le bouton flottant reste visible en permanence tant que l'app n'est pas installée
+  if (!dejaInstallee) {
+    installBtn.style.display = 'flex';
+  }
+
+  // Le navigateur signale que l'installation automatique est possible (Chrome/Edge/Brave/Android)
   window.addEventListener('beforeinstallprompt', (event) => {
     event.preventDefault(); // empêche la mini-infobar automatique de Chrome
     deferredPrompt = event;
-    installBtn.style.display = 'flex'; // on affiche notre bouton flottant
   });
 
   // Clic sur le bouton flottant
   installBtn.addEventListener('click', async () => {
-    if (!deferredPrompt) return;
-
-    installBtn.style.display = 'none';
-    deferredPrompt.prompt(); // ouvre la popup d'installation native
-
-    const { outcome } = await deferredPrompt.userChoice;
-    console.log(`Résultat de l'installation : ${outcome}`); // 'accepted' ou 'dismissed'
-
-    deferredPrompt = null;
+    if (deferredPrompt) {
+      // Cas standard : le navigateur gère l'installation nativement
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`Résultat de l'installation : ${outcome}`);
+      deferredPrompt = null;
+    } else {
+      // Cas Safari/iOS ou navigateur sans prompt natif : on montre comment faire manuellement
+      showInstallInstructions();
+    }
   });
+
+  function showInstallInstructions() {
+    const ua = navigator.userAgent || navigator.vendor || "";
+    const estIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+    const estSafariDesktop = /^((?!chrome|android).)*safari/i.test(ua) && !estIOS;
+
+    let etapes;
+    if (estIOS) {
+      etapes = `
+        <ol class="install-steps">
+          <li>Appuie sur l'icône <strong>Partager</strong> <span aria-hidden="true">⬆️</span> en bas de Safari</li>
+          <li>Fais défiler et choisis <strong>« Sur l'écran d'accueil »</strong></li>
+          <li>Appuie sur <strong>Ajouter</strong> en haut à droite</li>
+        </ol>`;
+    } else if (estSafariDesktop) {
+      etapes = `
+        <ol class="install-steps">
+          <li>Clique sur le menu <strong>Fichier</strong> dans la barre de menu</li>
+          <li>Choisis <strong>« Ajouter au Dock »</strong></li>
+        </ol>`;
+    } else {
+      etapes = `
+        <ol class="install-steps">
+          <li>Ouvre le menu de ton navigateur (généralement en haut à droite, ⋮ ou ☰)</li>
+          <li>Choisis <strong>« Installer l'application »</strong> ou <strong>« Ajouter à l'écran d'accueil »</strong></li>
+        </ol>
+        <p class="install-note">Pour l'installation en un clic, utilise Chrome, Edge ou Brave.</p>`;
+    }
+
+    const overlay = document.getElementById('modal-overlay');
+    const box = document.getElementById('modal-box');
+    if (!overlay || !box) return;
+    overlay.classList.remove('hidden');
+    box.innerHTML = `
+      <div class="modal-header">
+        <h2 class="modal-title">📲 Installer YouthConnect</h2>
+        <button class="modal-close" onclick="closeModal()" aria-label="Fermer">✕</button>
+      </div>
+      <p style="margin-bottom:14px;color:var(--gray-700)">Ton navigateur ne propose pas l'installation automatique, mais tu peux ajouter YouthConnect à ton écran d'accueil en quelques secondes :</p>
+      ${etapes}`;
+  }
 
   // Détecte que l'installation a réellement été effectuée
   window.addEventListener('appinstalled', () => {
@@ -1489,11 +1538,6 @@ window.resolveReport = resolveReport;
       setTimeout(() => { installToast.style.display = 'none'; }, 4000);
     }
   });
-
-  // Si le site tourne déjà en mode "app installée", on cache le bouton
-  if (window.matchMedia('(display-mode: standalone)').matches) {
-    installBtn.style.display = 'none';
-  }
 
   // Enregistrement du service worker (obligatoire pour la PWA)
   if ('serviceWorker' in navigator) {
