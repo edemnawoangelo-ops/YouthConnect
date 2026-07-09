@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mon-site-cache-v1';
+const CACHE_NAME = 'youthconnect-cache-v3';
 
 // Liste des fichiers à mettre en cache pour un fonctionnement hors-ligne basique
 const FICHIERS_A_METTRE_EN_CACHE = [
@@ -40,6 +40,40 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
         caches.match(event.request).then((reponseEnCache) => {
             return reponseEnCache || fetch(event.request);
+        })
+    );
+});
+
+// Réception d'une notification push envoyée par notre serveur (api/send-push.js)
+self.addEventListener('push', (event) => {
+    let data = { title: 'YouthConnect', body: 'Nouvelle activité sur YouthConnect', url: '/' };
+    try {
+        if (event.data) data = { ...data, ...event.data.json() };
+    } catch (e) {
+        console.error('Erreur lecture payload push:', e);
+    }
+
+    event.waitUntil(
+        self.registration.showNotification(data.title, {
+            body: data.body,
+            icon: data.icon || '/icon-192.png',
+            badge: data.badge || '/icon-192.png',
+            data: { url: data.url || '/' },
+        })
+    );
+});
+
+// Clic sur une notification : on ouvre (ou on met au premier plan) l'onglet YouthConnect
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+    const cible = event.notification.data?.url || '/';
+
+    event.waitUntil(
+        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientsList) => {
+            for (const client of clientsList) {
+                if ('focus' in client) return client.focus();
+            }
+            if (self.clients.openWindow) return self.clients.openWindow(cible);
         })
     );
 });

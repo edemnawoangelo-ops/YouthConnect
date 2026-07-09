@@ -75,7 +75,7 @@
         <div id="user-actions" class="hidden">
           <div class="notif-bell-wrap">
             <button class="notif-bell-btn" id="notif-bell-btn" onclick="toggleNotifDropdown(event)" aria-label="Notifications">
-              🔔-
+              🔔
               <span class="notif-badge hidden" id="notif-badge">0</span>
             </button>
             <div class="notif-dropdown hidden" id="notif-dropdown">
@@ -83,6 +83,9 @@
                 <h4>Notifications</h4>
                 <button class="link-btn" onclick="markAllNotificationsRead()">Tout marquer comme lu</button>
               </div>
+              <button class="push-enable-btn" id="push-enable-btn" onclick="subscribeToPushNotifications(false)">
+                🔔 Activer les notifications sur cet appareil
+              </button>
               <div id="notif-dropdown-list"></div>
             </div>
           </div>
@@ -555,6 +558,9 @@
               <div class="pstat-label">Réponses</div>
             </div>
           </div>
+          <button class="btn btn-ghost btn-full push-btn" id="push-enable-btn" onclick="subscribeToPushNotifications()">
+            🔔 Activer les notifications sur ce téléphone
+          </button>
         </div>
       </div>
       <!-- Activité -->

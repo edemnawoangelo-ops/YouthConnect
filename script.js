@@ -11,11 +11,18 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
   getFirestore, collection, addDoc, getDocs, query, orderBy,
-  onSnapshot, doc, deleteDoc, updateDoc, serverTimestamp, where
+  onSnapshot, doc, deleteDoc, updateDoc, setDoc, serverTimestamp, where
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import {
   getStorage, ref, uploadBytes, getDownloadURL
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+
+/* ─────────────────────────────────────────────────────────────
+   NOTIFICATIONS PUSH (Web Push) : clé publique VAPID
+   Sans danger à exposer côté client — c'est la clé PRIVÉE (côté
+   serveur, dans api/send-push.js) qui doit rester secrète.
+───────────────────────────────────────────────────────────────*/
+const VAPID_PUBLIC_KEY = "BHd7SgKkiZXIl2HrIfbuR0CkfqCgHu2CXuOVie3Aj0CPHULTd0uZmfw0s8yVGF-tMJt5T3-yRGm_NJT22saQYdU";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDg7yT-LOy8kwzOBGEVkl1ipxvcWFUWIGQ",
@@ -109,8 +116,22 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (state.currentUser) {
     listenNotifications();
     if (isAdmin(state.currentUser)) listenReports();
+    subscribeToPushNotifications(true); // silencieux : ne redemande pas la permission si déjà accordée
   }
   updateAdminUI();
+
+  // Lien direct vers une question (ex: reçu via une notification push) : /?post=ID
+  const postIdFromUrl = new URLSearchParams(window.location.search).get("post");
+  if (postIdFromUrl) {
+    const tryOpen = () => {
+      if (state.posts.some(p => p.id === postIdFromUrl)) {
+        openPostDetail(postIdFromUrl);
+      } else {
+        setTimeout(tryOpen, 300); // les posts arrivent via onSnapshot, on patiente un peu
+      }
+    };
+    tryOpen();
+  }
 });
 
 /* ─────────────────────────────────────────────────────────────
@@ -592,6 +613,7 @@ function loginUser(user) {
   listenNotifications();
   updateAdminUI();
   if (isAdmin(user)) listenReports();
+  subscribeToPushNotifications(true);
 }
 
 function logout() {
@@ -655,6 +677,16 @@ async function handleNewPost(event) {
   if (id) {
     closeModal();
     showNotification("Ta question a été publiée ! 🙌", "success");
+
+    // Notifie (push) tous les autres utilisateurs abonnés qu'une nouvelle question est postée
+    getPushSubscriptions({ excludeUserId: state.currentUser.id }).then((subs) => {
+      sendPushNotification(
+        subs,
+        "Nouvelle question sur YouthConnect",
+        `${state.currentUser.name} a posté : « ${title.slice(0, 80)}${title.length > 80 ? "…" : ""} »`,
+        `/?post=${id}`
+      );
+    });
   } else {
     btn.disabled = false;
     btn.textContent = "Publier la question";
@@ -947,6 +979,15 @@ async function handleAddComment(event) {
   // Notifie l'auteur de la question (sauf s'il répond à sa propre question)
   if (post && post.authorId !== state.currentUser.id) {
     createNotification(post.authorId, "reply", post.id, post.title, state.currentUser.name);
+
+    getPushSubscriptions({ onlyUserId: post.authorId }).then((subs) => {
+      sendPushNotification(
+        subs,
+        "Nouvelle réponse à ta question",
+        `${state.currentUser.name} a répondu : « ${post.title.slice(0, 80)}${post.title.length > 80 ? "…" : ""} »`,
+        `/?post=${post.id}`
+      );
+    });
   }
 
   showNotification("Réponse publiée ! 🎉", "success");
@@ -1120,6 +1161,12 @@ function showNotification(message, type = "info", duration = 3500) {
 ───────────────────────────────────────────────────────────────*/
 
 function renderNotifBell() {
+  const pushBtn = document.getElementById("push-enable-btn");
+  if (pushBtn) {
+    const dejaActif = typeof Notification !== "undefined" && Notification.permission === "granted";
+    pushBtn.classList.toggle("hidden", dejaActif);
+  }
+
   const unread = state.notifications.filter(n => !n.read).length;
 
   [document.getElementById("notif-badge"), document.getElementById("notif-badge-mobile")].forEach(el => {
@@ -1185,6 +1232,109 @@ async function markAllNotificationsRead() {
     await Promise.all(unread.map(n => updateDoc(doc(db, "notifications", n.id), { read: true })));
   } catch (e) {
     console.error("Erreur maj notifications:", e);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   18c-bis. NOTIFICATIONS PUSH (vraies notifications sur le téléphone)
+───────────────────────────────────────────────────────────────*/
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
+}
+
+/* ID de document déterministe basé sur l'endpoint (évite les doublons si on réabonne) */
+async function endpointToDocId(endpoint) {
+  const enc = new TextEncoder().encode(endpoint);
+  const hashBuf = await crypto.subtle.digest("SHA-256", enc);
+  return Array.from(new Uint8Array(hashBuf)).map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 40);
+}
+
+async function subscribeToPushNotifications(silencieux = false) {
+  if (!state.currentUser) { if (!silencieux) openModal("login"); return; }
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+    if (!silencieux) showNotification("Les notifications push ne sont pas supportées par ce navigateur.", "error");
+    return;
+  }
+
+  try {
+    if (!silencieux) {
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") {
+        showNotification("Notifications refusées. Tu peux les activer plus tard dans les réglages du navigateur.", "info");
+        return;
+      }
+    } else if (Notification.permission !== "granted") {
+      return; // pas de sollicitation silencieuse si la permission n'a jamais été donnée
+    }
+
+    const reg = await navigator.serviceWorker.ready;
+    let subscription = await reg.pushManager.getSubscription();
+    if (!subscription) {
+      subscription = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
+    }
+
+    const subJSON = subscription.toJSON();
+    const docId = await endpointToDocId(subJSON.endpoint);
+    await setDoc(doc(db, "pushSubscriptions", docId), {
+      userId: state.currentUser.id,
+      subscription: subJSON,
+      updatedAt: serverTimestamp(),
+    });
+
+    if (!silencieux) showNotification("Notifications activées sur cet appareil ! 🔔", "success");
+    renderNotifBell();
+  } catch (e) {
+    console.error("Erreur abonnement push:", e);
+    if (!silencieux) showNotification("Impossible d'activer les notifications.", "error");
+  }
+}
+
+async function getPushSubscriptions({ excludeUserId = null, onlyUserId = null } = {}) {
+  try {
+    const snapshot = await getDocs(collection(db, "pushSubscriptions"));
+    return snapshot.docs
+      .map((d) => d.data())
+      .filter((d) => {
+        if (onlyUserId) return d.userId === onlyUserId;
+        if (excludeUserId) return d.userId !== excludeUserId;
+        return true;
+      })
+      .map((d) => d.subscription)
+      .filter(Boolean);
+  } catch (e) {
+    console.error("Erreur lecture abonnements push:", e);
+    return [];
+  }
+}
+
+async function sendPushNotification(subscriptions, title, body, url) {
+  if (!subscriptions.length) return;
+  try {
+    const res = await fetch("/api/send-push", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subscriptions, title, body, url }),
+    });
+    const data = await res.json().catch(() => null);
+    if (data?.expired?.length) cleanupExpiredSubscriptions(data.expired);
+  } catch (e) {
+    console.error("Erreur envoi push (silencieux, non bloquant):", e);
+  }
+}
+
+async function cleanupExpiredSubscriptions(endpoints) {
+  for (const endpoint of endpoints) {
+    try {
+      const docId = await endpointToDocId(endpoint);
+      await deleteDoc(doc(db, "pushSubscriptions", docId));
+    } catch (e) { /* silencieux */ }
   }
 }
 
@@ -1450,6 +1600,7 @@ window.submitReport = submitReport;
 window.deletePost = deletePost;
 window.deleteComment = deleteComment;
 window.resolveReport = resolveReport;
+window.subscribeToPushNotifications = subscribeToPushNotifications;
 
 (function () {
   let deferredPrompt; // stocke l'événement d'installation (si le navigateur le propose)

@@ -424,6 +424,27 @@ select {
     font-size: .875rem;
 }
 
+.push-enable-btn {
+    display: block;
+    width: calc(100% - 24px);
+    margin: 10px 12px;
+    padding: 10px 14px;
+    background: var(--blue-light);
+    color: var(--blue);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: .8125rem;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    transition: background var(--transition);
+}
+
+.push-enable-btn:hover {
+    background: var(--blue);
+    color: var(--white);
+}
+
 /* ─── UPLOAD D'IMAGE DANS LES RÉPONSES ──────────────────────── */
 .image-upload-label {
     display: inline-flex;
@@ -1891,6 +1912,14 @@ textarea {
 .pstat-label {
     font-size: .8125rem;
     color: var(--gray-400);
+}
+
+.push-btn {
+    margin-top: 20px;
+}
+
+.push-btn.hidden {
+    display: none;
 }
 
 .dashboard-main {
