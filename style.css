@@ -832,13 +832,15 @@ select {
     height: 20px;
     object-fit: cover;
     border-radius: 50px;
-    border: none; /* Supprimer la bordure */
+    border: none;
+    /* Supprimer la bordure */
 }
 
 /* Ou cibler directement le badge */
 .post-card .category-badge {
     padding: 4px 8px;
-    gap: 4px; /* Espace réduit entre image et texte */
+    gap: 4px;
+    /* Espace réduit entre image et texte */
 }
 
 .post-card .category-badge img {
@@ -1020,7 +1022,7 @@ select {
     font-size: .9375rem;
 }
 
-.envoyer{
+.envoyer {
     width: 30px;
     height: auto;
 }
@@ -1210,13 +1212,13 @@ select {
 }
 
 .value-icon img {
-  width: 60px;
-  height: 60px;
-  object-fit: cover;
-  border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 50%;
 }
 
-.step-img{
+.step-img {
     width: 50px;
     height: auto;
     border-color: #22c55e;
@@ -1232,86 +1234,90 @@ select {
 }
 
 .contact-info h2 {
-  font-family: var(--font-display);
-  font-size: 1.5rem;
-  font-weight: 800;
-  margin-bottom: 16px;
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin-bottom: 16px;
 }
 
 .contact-info p {
-  color: var(--gray-600);
-  margin-bottom: 24px;
-  font-size: 1rem;
-  line-height: 1.6;
+    color: var(--gray-600);
+    margin-bottom: 24px;
+    font-size: 1rem;
+    line-height: 1.6;
 }
 
 @media (max-width: 768px) {
-  .contact-layout {
-    grid-template-columns: 1fr;
-  }
+    .contact-layout {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* Réseaux sociaux */
 .contact-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  list-style: none;
-  padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    list-style: none;
+    padding: 0;
 }
 
-.social-item { list-style: none; }
+.social-item {
+    list-style: none;
+}
 
 .social-link {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 11px 14px;
-  border-radius: 10px;
-  text-decoration: none;
-  border: 1.5px solid #E2E8F8;
-  background: #F5F8FF;
-  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 14px;
+    border-radius: 10px;
+    text-decoration: none;
+    border: 1.5px solid #E2E8F8;
+    background: #F5F8FF;
+    transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
 }
 
 .social-link:hover {
-  transform: translateX(5px);
-  box-shadow: 0 4px 16px rgba(26, 108, 255, 0.13);
-  border-color: #1A6CFF;
-  background: #EEF4FF;
+    transform: translateX(5px);
+    box-shadow: 0 4px 16px rgba(26, 108, 255, 0.13);
+    border-color: #1A6CFF;
+    background: #EEF4FF;
 }
 
 .social-icon-wrap {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
 }
 
 .social-label {
-  flex: 1;
-  font-weight: 600;
-  font-size: 0.9rem;
-  color: #1a1a2e;
+    flex: 1;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #1a1a2e;
 }
 
 .social-arrow {
-  font-size: 0.9rem;
-  color: #1A6CFF;
-  opacity: 0;
-  transition: opacity 0.15s;
+    font-size: 0.9rem;
+    color: #1A6CFF;
+    opacity: 0;
+    transition: opacity 0.15s;
 }
 
-.social-link:hover .social-arrow { opacity: 1; }
+.social-link:hover .social-arrow {
+    opacity: 1;
+}
 
 /*icônes */
-.icônes{
+.icônes {
     width: 40px;
     height: auto;
-} 
+}
 
 
 .contact-form h2 {
@@ -1321,120 +1327,120 @@ select {
     margin-bottom: 28px;
 }
 
-  .contact-container {
-      background: #ffffff;
-      border-radius: 12px;
-      padding: 48px 56px;
-      width: 100%;
-      max-width: 780px;
-      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-    }
- 
-    h1 {
-      font-size: 2rem;
-      font-weight: 800;
-      color: #111;
-      margin-bottom: 36px;
-      text-align: center;
-    }
- 
-    .form-group {
-      margin-bottom: 24px;
-    }
- 
-    label {
-      display: block;
-      font-weight: 700;
-      font-size: 0.95rem;
-      color: #111;
-      margin-bottom: 8px;
+.contact-container {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 48px 56px;
+    width: 100%;
+    max-width: 780px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+}
+
+h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #111;
+    margin-bottom: 36px;
+    text-align: center;
+}
+
+.form-group {
+    margin-bottom: 24px;
+}
+
+label {
+    display: block;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #111;
+    margin-bottom: 8px;
+}
+
+label::after {
+    content: " *";
+    color: red;
+}
+
+input[type="text"],
+input[type="email"],
+textarea {
+    width: 100%;
+    padding: 14px 18px;
+    border: 1.5px solid #d0d0d0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    color: #333;
+    background: #fafafa;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+    font-family: inherit;
+}
+
+input[type="text"]::placeholder,
+input[type="email"]::placeholder,
+textarea::placeholder {
+    color: #aaa;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+textarea:focus {
+    border-color: #3b6cf7;
+    box-shadow: 0 0 0 3px rgba(59, 108, 247, 0.12);
+    background: #fff;
+}
+
+textarea {
+    resize: vertical;
+    min-height: 150px;
+}
+
+.submit-btn {
+    display: block;
+    width: 100%;
+    padding: 16px;
+    background: #3b6cf7;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 700;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    margin-top: 8px;
+    letter-spacing: 0.02em;
+}
+
+.submit-btn:hover {
+    background: #2a56e0;
+}
+
+.submit-btn:active {
+    transform: scale(0.99);
+}
+
+/* Message de succès */
+.success-msg {
+    display: none;
+    background: #e6f4ea;
+    color: #2e7d32;
+    border: 1px solid #a5d6a7;
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-top: 20px;
+    text-align: center;
+    font-weight: 600;
+}
+
+@media (max-width: 600px) {
+    .contact-container {
+        padding: 32px 20px;
     }
 
-    label::after{
-        content: " *";
-        color: red;
-    }
- 
-    input[type="text"],
-    input[type="email"],
-    textarea {
-      width: 100%;
-      padding: 14px 18px;
-      border: 1.5px solid #d0d0d0;
-      border-radius: 8px;
-      font-size: 0.95rem;
-      color: #333;
-      background: #fafafa;
-      transition: border-color 0.2s, box-shadow 0.2s;
-      outline: none;
-      font-family: inherit;
-    }
- 
-    input[type="text"]::placeholder,
-    input[type="email"]::placeholder,
-    textarea::placeholder {
-      color: #aaa;
-    }
- 
-    input[type="text"]:focus,
-    input[type="email"]:focus,
-    textarea:focus {
-      border-color: #3b6cf7;
-      box-shadow: 0 0 0 3px rgba(59, 108, 247, 0.12);
-      background: #fff;
-    }
- 
-    textarea {
-      resize: vertical;
-      min-height: 150px;
-    }
- 
-    .submit-btn {
-      display: block;
-      width: 100%;
-      padding: 16px;
-      background: #3b6cf7;
-      color: #fff;
-      font-size: 1rem;
-      font-weight: 700;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
-      margin-top: 8px;
-      letter-spacing: 0.02em;
-    }
- 
-    .submit-btn:hover {
-      background: #2a56e0;
-    }
- 
-    .submit-btn:active {
-      transform: scale(0.99);
-    }
- 
-    /* Message de succès */
-    .success-msg {
-      display: none;
-      background: #e6f4ea;
-      color: #2e7d32;
-      border: 1px solid #a5d6a7;
-      border-radius: 8px;
-      padding: 14px 18px;
-      margin-top: 20px;
-      text-align: center;
-      font-weight: 600;
-    }
- 
-    @media (max-width: 600px) {
-      .contact-container {
-        padding: 32px 20px;
-      }
- 
-      h1 {
+    h1 {
         font-size: 1.5rem;
-      }
     }
+}
 
 /* ─── ABOUT PAGE ─────────────────────────────────────────────── */
 .about-page {
@@ -1613,7 +1619,7 @@ select {
     gap: 12px;
 }
 
-.feature-icon-img{
+.feature-icon-img {
     width: 40px;
     height: auto;
 }
@@ -1674,7 +1680,8 @@ select {
 
 .footer-links ul {
     display: flex;
-    flex-direction: row; /* ← horizontal au lieu de vertical */
+    flex-direction: row;
+    /* ← horizontal au lieu de vertical */
     gap: 12px;
     flex-wrap: wrap;
     padding: 0;
@@ -2026,5 +2033,94 @@ select {
     .notif {
         font-size: .875rem;
         padding: 12px 14px;
+    }
+}
+
+:root {
+    --install-accent: #4f9dff;
+    --install-accent-hover: #6bb0ff;
+    --install-surface: #1a1a2e;
+    --install-text: #f2f2f7;
+}
+
+#install-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    display: none;
+    /* caché par défaut, affiché par install-button.js quand l'install est possible */
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+    background: var(--install-accent);
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(79, 157, 255, 0.35);
+    transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+    z-index: 1000;
+    animation: install-btn-apparition 0.4s ease;
+}
+
+#install-btn:hover {
+    background: var(--install-accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px rgba(79, 157, 255, 0.45);
+}
+
+#install-btn:active {
+    transform: translateY(0);
+}
+
+#install-btn svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+@keyframes install-btn-apparition {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#install-toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--install-surface);
+    color: var(--install-text);
+    padding: 14px 20px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    display: none;
+    z-index: 1000;
+}
+
+@media (max-width: 480px) {
+    #install-btn {
+        right: 16px;
+        bottom: 16px;
+        left: 16px;
+        justify-content: center;
+    }
+
+    #install-toast {
+        right: 16px;
+        bottom: 16px;
+        left: 16px;
+        text-align: center;
     }
 }

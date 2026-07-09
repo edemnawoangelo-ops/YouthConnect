@@ -15,32 +15,32 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey:            "AIzaSyDg7yT-LOy8kwzOBGEVkl1ipxvcWFUWIGQ",
-  authDomain:        "youth-connect-2.firebaseapp.com",
-  projectId:         "youth-connect-2",
-  storageBucket:     "youth-connect-2.firebasestorage.app",
+  apiKey: "AIzaSyDg7yT-LOy8kwzOBGEVkl1ipxvcWFUWIGQ",
+  authDomain: "youth-connect-2.firebaseapp.com",
+  projectId: "youth-connect-2",
+  storageBucket: "youth-connect-2.firebasestorage.app",
   messagingSenderId: "26735360538",
-  appId:             "1:26735360538:web:9197b8cad3c821b2476fa3"
+  appId: "1:26735360538:web:9197b8cad3c821b2476fa3"
 };
 
 const app = initializeApp(firebaseConfig);
-const db  = getFirestore(app);
+const db = getFirestore(app);
 
 /* ─────────────────────────────────────────────────────────────
    1. DONNÉES : CATÉGORIES
 ───────────────────────────────────────────────────────────────*/
 
 const CATEGORIES = [
-  { name: "Études",                    image: "https://res.cloudinary.com/dyo3r3lph/image/upload/v1782576446/Etude_tkfk2y.jpg" },
-  { name: "Informatique",              image: "https://res.cloudinary.com/dyo3r3lph/image/upload/v1782576445/Informatique_yrswg4.jpg" },
-  { name: "Développement Web",         image: "https://res.cloudinary.com/dyo3r3lph/image/upload/v1782576445/D%C3%A9veloppement_Web_zzsmqv.jpg" },
-  { name: "Entrepreneuriat",           image: "https://res.cloudinary.com/dyo3r3lph/image/upload/v1782576444/Entrepreneuriat_fu5qm9.jpg" },
-  { name: "Emploi",                    image: "https://res.cloudinary.com/dyo3r3lph/image/upload/v1782576444/Emploi_gyjxoh.jpg" },
-  { name: "Marketing Digital",         image: "https://res.cloudinary.com/dyo3r3lph/image/upload/v1782576444/Marketing_Digital_typd7m.jpg" },
+  { name: "Études", image: "https://res.cloudinary.com/dyo3r3lph/image/upload/v1782576446/Etude_tkfk2y.jpg" },
+  { name: "Informatique", image: "https://res.cloudinary.com/dyo3r3lph/image/upload/v1782576445/Informatique_yrswg4.jpg" },
+  { name: "Développement Web", image: "https://res.cloudinary.com/dyo3r3lph/image/upload/v1782576445/D%C3%A9veloppement_Web_zzsmqv.jpg" },
+  { name: "Entrepreneuriat", image: "https://res.cloudinary.com/dyo3r3lph/image/upload/v1782576444/Entrepreneuriat_fu5qm9.jpg" },
+  { name: "Emploi", image: "https://res.cloudinary.com/dyo3r3lph/image/upload/v1782576444/Emploi_gyjxoh.jpg" },
+  { name: "Marketing Digital", image: "https://res.cloudinary.com/dyo3r3lph/image/upload/v1782576444/Marketing_Digital_typd7m.jpg" },
   { name: "Intelligence Artificielle", image: "https://res.cloudinary.com/dyo3r3lph/image/upload/v1782576444/Intelligence_Artificielle_jlghjj.jpg" },
-  { name: "Motivation",                image: "https://res.cloudinary.com/dyo3r3lph/image/upload/v1782576446/Motivation_e0xrsc.jpg" },
-  { name: "Bourses d'études",          image: "https://res.cloudinary.com/dyo3r3lph/image/upload/v1782576444/Bourses_d_%C3%A9tudes_s064hl.jpg" },
-  { name: "Vie Étudiante",             image: "https://res.cloudinary.com/dyo3r3lph/image/upload/v1782576444/Vie_%C3%89tudiante_h6of2i.jpg" },
+  { name: "Motivation", image: "https://res.cloudinary.com/dyo3r3lph/image/upload/v1782576446/Motivation_e0xrsc.jpg" },
+  { name: "Bourses d'études", image: "https://res.cloudinary.com/dyo3r3lph/image/upload/v1782576444/Bourses_d_%C3%A9tudes_s064hl.jpg" },
+  { name: "Vie Étudiante", image: "https://res.cloudinary.com/dyo3r3lph/image/upload/v1782576444/Vie_%C3%89tudiante_h6of2i.jpg" },
 ];
 
 /* Publications de démonstration (chargées une seule fois dans Firestore si vide) */
@@ -57,15 +57,15 @@ const DEMO_POSTS = [
 ───────────────────────────────────────────────────────────────*/
 
 let state = {
-  currentUser:    null,
-  currentPage:    "home",
-  currentPostId:  null,
+  currentUser: null,
+  currentPage: "home",
+  currentPostId: null,
   categoryFilter: "",
-  posts:          [],   // cache local mis à jour par onSnapshot
-  comments:       [],   // cache local mis à jour par onSnapshot
+  posts: [],   // cache local mis à jour par onSnapshot
+  comments: [],   // cache local mis à jour par onSnapshot
 };
 
-let unsubPosts    = null;
+let unsubPosts = null;
 let unsubComments = null;
 
 /* ─────────────────────────────────────────────────────────────
@@ -97,9 +97,9 @@ function listenPosts() {
     renderHomePosts();
     renderStats();
     renderHomeCategories();
-    if (state.currentPage === "forum")      renderForumPosts();
+    if (state.currentPage === "forum") renderForumPosts();
     if (state.currentPage === "categories") renderFullCategories();
-    if (state.currentPage === "dashboard")  renderDashboard();
+    if (state.currentPage === "dashboard") renderDashboard();
   }, (err) => console.error("Erreur écoute posts:", err));
 }
 
@@ -108,7 +108,7 @@ function listenComments() {
   unsubComments = onSnapshot(q, (snapshot) => {
     state.comments = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     if (state.currentPage === "post-detail") openPostDetail(state.currentPostId);
-    if (state.currentPage === "dashboard")   renderDashboard();
+    if (state.currentPage === "dashboard") renderDashboard();
   }, (err) => console.error("Erreur écoute commentaires:", err));
 }
 
@@ -146,8 +146,8 @@ async function addCommentToFirestore(commentData) {
    6. SESSION UTILISATEUR (LocalStorage — pas besoin de synchro)
 ───────────────────────────────────────────────────────────────*/
 
-function getUsers()  { return JSON.parse(localStorage.getItem("yc_users")   || "[]"); }
-function saveUsers(d){ localStorage.setItem("yc_users", JSON.stringify(d)); }
+function getUsers() { return JSON.parse(localStorage.getItem("yc_users") || "[]"); }
+function saveUsers(d) { localStorage.setItem("yc_users", JSON.stringify(d)); }
 
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -166,25 +166,25 @@ function loadSession() {
 }
 
 function updateNavForUser() {
-  const guestEl    = document.getElementById("guest-actions");
-  const userEl     = document.getElementById("user-actions");
+  const guestEl = document.getElementById("guest-actions");
+  const userEl = document.getElementById("user-actions");
   const welcomeBtn = document.getElementById("welcome-btn");
-  const guestMobile   = document.getElementById("guest-actions-mobile");
-  const userMobile    = document.getElementById("user-actions-mobile");
+  const guestMobile = document.getElementById("guest-actions-mobile");
+  const userMobile = document.getElementById("user-actions-mobile");
   const welcomeMobile = document.getElementById("welcome-btn-mobile");
 
   if (state.currentUser) {
     guestEl.classList.add("hidden");
     userEl.classList.remove("hidden");
     welcomeBtn.textContent = `👤 ${state.currentUser.name.split(" ")[0]}`;
-    if (guestMobile)   guestMobile.classList.add("hidden");
-    if (userMobile)    userMobile.classList.remove("hidden");
+    if (guestMobile) guestMobile.classList.add("hidden");
+    if (userMobile) userMobile.classList.remove("hidden");
     if (welcomeMobile) welcomeMobile.textContent = `👤 ${state.currentUser.name.split(" ")[0]}`;
   } else {
     guestEl.classList.remove("hidden");
     userEl.classList.add("hidden");
     if (guestMobile) guestMobile.classList.remove("hidden");
-    if (userMobile)  userMobile.classList.add("hidden");
+    if (userMobile) userMobile.classList.add("hidden");
   }
 }
 
@@ -213,10 +213,10 @@ function showPage(pageId) {
 
   window.scrollTo({ top: 0, behavior: "smooth" });
 
-  if (pageId === "forum")       renderForumPosts();
-  if (pageId === "categories")  renderFullCategories();
-  if (pageId === "dashboard")   renderDashboard();
-  if (pageId === "home")        { renderHomePosts(); renderStats(); }
+  if (pageId === "forum") renderForumPosts();
+  if (pageId === "categories") renderFullCategories();
+  if (pageId === "dashboard") renderDashboard();
+  if (pageId === "home") { renderHomePosts(); renderStats(); }
 }
 
 function filterAndGo(category) {
@@ -238,8 +238,8 @@ function setupNavScroll() {
 }
 
 function setupBurgerMenu() {
-  const btn     = document.getElementById("burger-btn");
-  const links   = document.getElementById("nav-links");
+  const btn = document.getElementById("burger-btn");
+  const links = document.getElementById("nav-links");
   const actions = document.getElementById("nav-actions");
 
   btn.addEventListener("click", () => {
@@ -251,14 +251,14 @@ function setupBurgerMenu() {
 }
 
 function closeMobileMenu() {
-  const btn     = document.getElementById("burger-btn");
-  const links   = document.getElementById("nav-links");
+  const btn = document.getElementById("burger-btn");
+  const links = document.getElementById("nav-links");
   const actions = document.getElementById("nav-actions");
 
-  if (btn)     btn.classList.remove("open");
-  if (links)   links.classList.remove("open");
+  if (btn) btn.classList.remove("open");
+  if (links) links.classList.remove("open");
   if (actions) actions.classList.remove("open");
-  if (btn)     btn.setAttribute("aria-expanded", "false");
+  if (btn) btn.setAttribute("aria-expanded", "false");
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -277,11 +277,11 @@ function setupModalClose() {
 
 function openModal(type) {
   const overlay = document.getElementById("modal-overlay");
-  const box     = document.getElementById("modal-box");
+  const box = document.getElementById("modal-box");
 
   overlay.classList.remove("hidden");
 
-  if (type === "login")    box.innerHTML = buildLoginForm();
+  if (type === "login") box.innerHTML = buildLoginForm();
   if (type === "register") box.innerHTML = buildRegisterForm();
   if (type === "new-post") box.innerHTML = buildNewPostForm();
 
@@ -408,10 +408,10 @@ function buildNewPostForm() {
 function handleRegister(event) {
   event.preventDefault();
 
-  const name     = document.getElementById("reg-name").value.trim();
-  const email    = document.getElementById("reg-email").value.trim().toLowerCase();
+  const name = document.getElementById("reg-name").value.trim();
+  const email = document.getElementById("reg-email").value.trim().toLowerCase();
   const password = document.getElementById("reg-password").value;
-  const confirm  = document.getElementById("reg-confirm").value;
+  const confirm = document.getElementById("reg-confirm").value;
 
   clearErrors(["err-name", "err-email", "err-password", "err-confirm"]);
 
@@ -444,7 +444,7 @@ function handleRegister(event) {
   }
 
   const newUser = {
-    id:       uid(),
+    id: uid(),
     name,
     email,
     password,
@@ -462,14 +462,14 @@ function handleRegister(event) {
 function handleLogin(event) {
   event.preventDefault();
 
-  const email    = document.getElementById("login-email").value.trim().toLowerCase();
+  const email = document.getElementById("login-email").value.trim().toLowerCase();
   const password = document.getElementById("login-password").value;
-  const errEl    = document.getElementById("login-error");
+  const errEl = document.getElementById("login-error");
 
   errEl.style.display = "none";
 
   const users = getUsers();
-  const user  = users.find(u => u.email === email && u.password === password);
+  const user = users.find(u => u.email === email && u.password === password);
 
   if (!user) {
     errEl.textContent = "Email ou mot de passe incorrect.";
@@ -503,9 +503,9 @@ function logout() {
 async function handleNewPost(event) {
   event.preventDefault();
 
-  const title    = document.getElementById("post-title").value.trim();
+  const title = document.getElementById("post-title").value.trim();
   const category = document.getElementById("post-category").value;
-  const body     = document.getElementById("post-body").value.trim();
+  const body = document.getElementById("post-body").value.trim();
 
   clearErrors(["err-post-title", "err-post-cat", "err-post-body"]);
   let valid = true;
@@ -528,7 +528,7 @@ async function handleNewPost(event) {
     title,
     body,
     category,
-    author:   state.currentUser.name,
+    author: state.currentUser.name,
     authorId: state.currentUser.id,
   };
 
@@ -549,7 +549,7 @@ async function handleNewPost(event) {
 
 function renderForumPosts() {
   const container = document.getElementById("forum-posts-list");
-  const emptyEl   = document.getElementById("forum-empty");
+  const emptyEl = document.getElementById("forum-empty");
 
   if (!container) return;
 
@@ -600,9 +600,9 @@ function renderHomePosts() {
 
 function buildPostCard(post) {
   const comments = state.comments.filter(c => c.postId === post.id);
-  const excerpt  = post.body.length > 130 ? post.body.slice(0, 130) + "…" : post.body;
-  const cat      = CATEGORIES.find(c => c.name === post.category);
-  const imgTag   = cat
+  const excerpt = post.body.length > 130 ? post.body.slice(0, 130) + "…" : post.body;
+  const cat = CATEGORIES.find(c => c.name === post.category);
+  const imgTag = cat
     ? `<img src="${cat.image}" alt="${escapeHtml(cat.name)}" width="18" height="18" style="vertical-align:middle;margin-right:4px;border-radius:50px;" />`
     : "📋";
 
@@ -644,9 +644,9 @@ function openPostDetail(postId) {
   state.currentPostId = postId;
 
   const container = document.getElementById("post-detail-content");
-  const comments  = state.comments.filter(c => c.postId === postId);
-  const cat       = CATEGORIES.find(c => c.name === post.category);
-  const imgTag    = cat
+  const comments = state.comments.filter(c => c.postId === postId);
+  const cat = CATEGORIES.find(c => c.name === post.category);
+  const imgTag = cat
     ? `<img src="${cat.image}" alt="${escapeHtml(cat.name)}" width="18" height="18" style="vertical-align:middle;border-radius:50px;">`
     : "📋";
 
@@ -711,7 +711,7 @@ async function handleAddComment(event) {
     return;
   }
 
-  const body  = document.getElementById("comment-body")?.value.trim();
+  const body = document.getElementById("comment-body")?.value.trim();
   const errEl = document.getElementById("err-comment");
 
   if (!body || body.length < 10) {
@@ -728,8 +728,8 @@ async function handleAddComment(event) {
   btn.textContent = "Publication…";
 
   await addCommentToFirestore({
-    postId:   state.currentPostId,
-    author:   state.currentUser.name,
+    postId: state.currentPostId,
+    author: state.currentUser.name,
     authorId: state.currentUser.id,
     body,
   });
@@ -777,20 +777,20 @@ function buildCategoryCard(cat, count) {
     </div>`;
 }
 
-function renderNavCategories() {}
+function renderNavCategories() { }
 
 /* ─────────────────────────────────────────────────────────────
    16. STATISTIQUES
 ───────────────────────────────────────────────────────────────*/
 
 function renderStats() {
-  const users    = getUsers().length + 100;
-  const posts    = state.posts.length + 40;
+  const users = getUsers().length + 100;
+  const posts = state.posts.length + 40;
   const comments = state.comments.length + 93;
 
-  animateCount("stat-members",   users);
+  animateCount("stat-members", users);
   animateCount("stat-questions", posts);
-  animateCount("stat-answers",   comments);
+  animateCount("stat-answers", comments);
 }
 
 function animateCount(id, target) {
@@ -798,12 +798,12 @@ function animateCount(id, target) {
   if (!el) return;
 
   const duration = 1200;
-  const start    = performance.now();
+  const start = performance.now();
 
   function step(now) {
-    const elapsed  = now - start;
+    const elapsed = now - start;
     const progress = Math.min(elapsed / duration, 1);
-    const value    = Math.round(target * easeOut(progress));
+    const value = Math.round(target * easeOut(progress));
     el.textContent = value.toLocaleString("fr-FR");
     if (progress < 1) requestAnimationFrame(step);
   }
@@ -824,23 +824,23 @@ function renderDashboard() {
     return;
   }
 
-  const user     = state.currentUser;
-  const posts    = state.posts.filter(p => p.authorId === user.id);
+  const user = state.currentUser;
+  const posts = state.posts.filter(p => p.authorId === user.id);
   const comments = state.comments.filter(c => c.authorId === user.id);
 
   document.getElementById("dashboard-greeting").textContent =
     `Bonjour, ${user.name.split(" ")[0]} 👋`;
 
   document.getElementById("dash-avatar").textContent = user.name.charAt(0).toUpperCase();
-  document.getElementById("dash-name").textContent   = user.name;
-  document.getElementById("dash-email").textContent  = user.email;
-  document.getElementById("dash-since").textContent  =
+  document.getElementById("dash-name").textContent = user.name;
+  document.getElementById("dash-email").textContent = user.email;
+  document.getElementById("dash-since").textContent =
     `Membre depuis le ${formatDate(user.joinedAt)}`;
-  document.getElementById("dash-posts-count").textContent    = posts.length;
+  document.getElementById("dash-posts-count").textContent = posts.length;
   document.getElementById("dash-comments-count").textContent = comments.length;
 
   const postsContainer = document.getElementById("dash-posts-list");
-  const postsEmpty     = document.getElementById("dash-posts-empty");
+  const postsEmpty = document.getElementById("dash-posts-empty");
 
   if (posts.length === 0) {
     postsContainer.classList.add("hidden");
@@ -852,7 +852,7 @@ function renderDashboard() {
   }
 
   const commentsContainer = document.getElementById("dash-comments-list");
-  const commentsEmpty     = document.getElementById("dash-comments-empty");
+  const commentsEmpty = document.getElementById("dash-comments-empty");
 
   if (comments.length === 0) {
     commentsContainer.classList.add("hidden");
@@ -885,7 +885,7 @@ function renderDashboard() {
 
 function showNotification(message, type = "info", duration = 3500) {
   const container = document.getElementById("notification-container");
-  const notif     = document.createElement("div");
+  const notif = document.createElement("div");
 
   const icons = { success: "✅", error: "❌", info: "ℹ️", warning: "⚠️" };
   notif.className = `notif ${type}`;
@@ -935,13 +935,13 @@ function formatDate(isoString) {
   }
   if (isNaN(d)) return "–";
 
-  const now  = new Date();
+  const now = new Date();
   const diff = Math.floor((now - d) / 1000);
 
-  if (diff < 60)         return "À l'instant";
-  if (diff < 3600)       return `Il y a ${Math.floor(diff / 60)} min`;
-  if (diff < 86400)      return `Il y a ${Math.floor(diff / 3600)} h`;
-  if (diff < 86400 * 7)  return `Il y a ${Math.floor(diff / 86400)} j`;
+  if (diff < 60) return "À l'instant";
+  if (diff < 3600) return `Il y a ${Math.floor(diff / 60)} min`;
+  if (diff < 86400) return `Il y a ${Math.floor(diff / 3600)} h`;
+  if (diff < 86400 * 7) return `Il y a ${Math.floor(diff / 86400)} j`;
   if (diff < 86400 * 30) return `Il y a ${Math.floor(diff / (86400 * 7))} sem.`;
 
   return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
@@ -962,16 +962,70 @@ function escapeHtml(str) {
    Les attributs onclick="..." dans le HTML ne peuvent pas accéder
    aux fonctions d'un module ES, il faut les attacher à window.
 ───────────────────────────────────────────────────────────────*/
-window.showPage         = showPage;
-window.filterAndGo      = filterAndGo;
-window.openModal        = openModal;
-window.closeModal       = closeModal;
+window.showPage = showPage;
+window.filterAndGo = filterAndGo;
+window.openModal = openModal;
+window.closeModal = closeModal;
 window.openNewPostModal = openNewPostModal;
-window.openPostDetail   = openPostDetail;
-window.handleLogin      = handleLogin;
-window.handleRegister   = handleRegister;
-window.handleNewPost    = handleNewPost;
+window.openPostDetail = openPostDetail;
+window.handleLogin = handleLogin;
+window.handleRegister = handleRegister;
+window.handleNewPost = handleNewPost;
 window.handleAddComment = handleAddComment;
-window.searchPosts      = searchPosts;
-window.filterPosts      = filterPosts;
-window.logout           = logout;
+window.searchPosts = searchPosts;
+window.filterPosts = filterPosts;
+window.logout = logout;
+
+(function () {
+  let deferredPrompt; // stocke l'événement d'installation
+  const installBtn = document.getElementById('install-btn');
+  const installToast = document.getElementById('install-toast');
+
+  if (!installBtn) {
+    console.warn('Bouton #install-btn introuvable : le snippet install-button.html a-t-il bien été ajouté ?');
+    return;
+  }
+
+  // Le navigateur signale que l'app est installable
+  window.addEventListener('beforeinstallprompt', (event) => {
+    event.preventDefault(); // empêche la mini-infobar automatique de Chrome
+    deferredPrompt = event;
+    installBtn.style.display = 'flex'; // on affiche notre bouton flottant
+  });
+
+  // Clic sur le bouton flottant
+  installBtn.addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+
+    installBtn.style.display = 'none';
+    deferredPrompt.prompt(); // ouvre la popup d'installation native
+
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`Résultat de l'installation : ${outcome}`); // 'accepted' ou 'dismissed'
+
+    deferredPrompt = null;
+  });
+
+  // Détecte que l'installation a réellement été effectuée
+  window.addEventListener('appinstalled', () => {
+    installBtn.style.display = 'none';
+    if (installToast) {
+      installToast.style.display = 'block';
+      setTimeout(() => { installToast.style.display = 'none'; }, 4000);
+    }
+  });
+
+  // Si le site tourne déjà en mode "app installée", on cache le bouton
+  if (window.matchMedia('(display-mode: standalone)').matches) {
+    installBtn.style.display = 'none';
+  }
+
+  // Enregistrement du service worker (obligatoire pour la PWA)
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then((reg) => console.log('Service worker enregistré :', reg.scope))
+        .catch((err) => console.error('Échec du service worker :', err));
+    });
+  }
+})();
