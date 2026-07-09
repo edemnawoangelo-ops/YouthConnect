@@ -559,6 +559,71 @@ select {
     font-size: .8125rem;
 }
 
+/* ─── PAGE NOTIFICATIONS ─────────────────────────────────────── */
+.notifications-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    padding: 20px 0 4px;
+}
+
+.notifications-page-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 8px 0 60px;
+}
+
+.notif-page-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    padding: 16px 18px;
+    cursor: pointer;
+    transition: background var(--transition), box-shadow var(--transition);
+}
+
+.notif-page-item:hover {
+    box-shadow: var(--shadow-sm);
+}
+
+.notif-page-item.unread {
+    background: var(--blue-light);
+    border-color: var(--blue-mid);
+}
+
+.notif-page-icon {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.notif-page-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.notif-page-content p {
+    font-size: .9375rem;
+    color: var(--gray-900);
+    margin-bottom: 4px;
+}
+
+.notif-page-date {
+    font-size: .8125rem;
+    color: var(--gray-600);
+}
+
+.notif-page-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--blue);
+    flex-shrink: 0;
+    margin-top: 6px;
+}
+
 .reports-list {
     display: flex;
     flex-direction: column;
@@ -819,6 +884,21 @@ select {
     display: flex;
     align-items: center;
     gap: 10px;
+}
+
+/* Boutons de la navbar (connexion, inscription, notifications, déconnexion, profil) :
+   volontairement plus compacts que les boutons génériques du site */
+#guest-actions .btn,
+#user-actions .btn,
+.nav-mobile-actions .btn {
+    padding: 7px 14px;
+    font-size: .8125rem;
+    gap: 6px;
+}
+
+.notif-bell-btn {
+    font-size: 1.05rem;
+    padding: 6px 8px;
 }
 
 /* Burger */
@@ -2186,7 +2266,8 @@ textarea {
     .nav-mobile-actions .btn {
         flex: 1;
         justify-content: center;
-        font-size: .9375rem;
+        font-size: .8125rem;
+        padding: 7px 12px;
         white-space: normal;
         text-align: center;
     }

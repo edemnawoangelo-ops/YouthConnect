@@ -87,12 +87,14 @@ let state = {
   comments: [],   // cache local mis à jour par onSnapshot
   notifications: [],   // notifications de l'utilisateur connecté
   reports: [],   // signalements (admin uniquement)
+  membersCount: null,   // nombre réel de membres, mis à jour en direct via Firestore
 };
 
 let unsubPosts = null;
 let unsubComments = null;
 let unsubNotifications = null;
 let unsubReports = null;
+let unsubMembers = null;
 
 /* ─────────────────────────────────────────────────────────────
    3. INITIALISATION
@@ -106,11 +108,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   setupNavScroll();
   setupBurgerMenu();
   setupModalClose();
-  setupNotifDropdownClose();
 
   // Écoute temps réel des posts et commentaires
   listenPosts();
   listenComments();
+  listenMembers();
 
   // Si une session est active, démarrer les écoutes personnelles
   if (state.currentUser) {
@@ -155,9 +157,18 @@ function listenComments() {
   const q = query(collection(db, "comments"), orderBy("date", "asc"));
   unsubComments = onSnapshot(q, (snapshot) => {
     state.comments = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderStats();
     if (state.currentPage === "post-detail") openPostDetail(state.currentPostId);
     if (state.currentPage === "dashboard") renderDashboard();
   }, (err) => console.error("Erreur écoute commentaires:", err));
+}
+
+function listenMembers() {
+  const q = collection(db, "members");
+  unsubMembers = onSnapshot(q, (snapshot) => {
+    state.membersCount = snapshot.size;
+    renderStats();
+  }, (err) => console.error("Erreur écoute membres:", err));
 }
 
 function listenNotifications() {
@@ -316,6 +327,11 @@ function updateNavForUser() {
 ───────────────────────────────────────────────────────────────*/
 
 function showPage(pageId) {
+  if (pageId === "notifications" && !state.currentUser) {
+    openModal("login");
+    return;
+  }
+
   closeMobileMenu();
 
   document.querySelectorAll(".page").forEach(p => {
@@ -341,6 +357,7 @@ function showPage(pageId) {
   if (pageId === "dashboard") renderDashboard();
   if (pageId === "home") { renderHomePosts(); renderStats(); }
   if (pageId === "moderation") renderModeration();
+  if (pageId === "notifications") renderNotificationsPage();
 }
 
 function filterAndGo(category) {
@@ -578,6 +595,13 @@ function handleRegister(event) {
   users.push(newUser);
   saveUsers(users);
 
+  // Enregistre le membre côté Firestore (sans mot de passe) pour un comptage live sur tous les appareils
+  addDoc(collection(db, "members"), {
+    memberId: newUser.id,
+    name,
+    createdAt: serverTimestamp(),
+  }).catch((e) => console.error("Erreur enregistrement membre:", e));
+
   loginUser(newUser);
   closeModal();
   showNotification(`Bienvenue ${newUser.name.split(" ")[0]} ! 🎉 Ton compte a été créé.`, "success");
@@ -629,7 +653,6 @@ function logout() {
   state.reports = [];
   renderNotifBell();
   updateAdminUI();
-  closeNotifDropdown();
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -828,11 +851,12 @@ function openPostDetail(postId) {
         <button class="btn btn-primary" onclick="openModal('login')">Se connecter</button>
        </div>`;
 
-  const adminDeleteBtn = isAdmin(state.currentUser)
-    ? `<button class="btn btn-outline-danger btn-sm" onclick="deletePost('${post.id}')">🗑️ Supprimer (admin)</button>`
+  const isOwner = state.currentUser && state.currentUser.id === post.authorId;
+  const deleteBtn = (isAdmin(state.currentUser) || isOwner)
+    ? `<button class="btn btn-outline-danger btn-sm" onclick="deletePost('${post.id}')">🗑️ Supprimer ${isAdmin(state.currentUser) && !isOwner ? "(admin)" : ""}</button>`
     : "";
 
-  const reportBtn = state.currentUser
+  const reportBtn = state.currentUser && !isOwner
     ? `<button class="report-link" onclick="openReportModal('post','${post.id}','${post.id}')">🚩 Signaler cette question</button>`
     : "";
 
@@ -849,7 +873,7 @@ function openPostDetail(postId) {
       </div>
       <div class="post-detail-actions">
         ${reportBtn}
-        ${adminDeleteBtn}
+        ${deleteBtn}
       </div>
     </div>
 
@@ -894,12 +918,15 @@ function buildCommentCard(comment) {
          onclick="openImageLightbox('${comment.imageUrl}')" />`
     : "";
 
+  const isOwner = state.currentUser && state.currentUser.id === comment.authorId;
+  const admin = isAdmin(state.currentUser);
+
   const actions = [];
-  if (state.currentUser) {
+  if (state.currentUser && !isOwner) {
     actions.push(`<button class="report-link" onclick="openReportModal('comment','${comment.id}','${comment.postId}')">🚩 Signaler</button>`);
   }
-  if (isAdmin(state.currentUser)) {
-    actions.push(`<button class="report-link report-link-danger" onclick="deleteComment('${comment.id}')">🗑️ Supprimer (admin)</button>`);
+  if (admin || isOwner) {
+    actions.push(`<button class="report-link report-link-danger" onclick="deleteComment('${comment.id}')">🗑️ Supprimer ${admin && !isOwner ? "(admin)" : ""}</button>`);
   }
 
   return `
@@ -1041,7 +1068,9 @@ function renderNavCategories() { }
 ───────────────────────────────────────────────────────────────*/
 
 function renderStats() {
-  const users = getUsers().length + 100;
+  // state.membersCount vient de Firestore (listenMembers) → identique et à jour sur tous les appareils.
+  // En attendant la première réponse du serveur, on retombe sur le compte local pour ne pas afficher 0.
+  const users = (state.membersCount ?? getUsers().length) + 100;
   const posts = state.posts.length + 40;
   const comments = state.comments.length + 93;
 
@@ -1179,44 +1208,40 @@ function renderNotifBell() {
     }
   });
 
-  const list = document.getElementById("notif-dropdown-list");
-  if (list) {
-    list.innerHTML = state.notifications.length
-      ? state.notifications.slice(0, 20).map(n => `
-          <div class="notif-item ${n.read ? "" : "unread"}" onclick="openNotification('${n.id}','${n.postId}')">
-            <p>💬 <strong>${escapeHtml(n.fromName || "Quelqu'un")}</strong> a répondu à
-              « ${escapeHtml((n.postTitle || "").slice(0, 50))}${(n.postTitle || "").length > 50 ? "…" : ""} »</p>
-            <span class="notif-item-date">${formatDate(n.date)}</span>
-          </div>`).join("")
-      : `<div class="notif-empty">Pas encore de notification.</div>`;
+  if (state.currentPage === "notifications") renderNotificationsPage();
+}
+
+function renderNotificationsPage() {
+  const titleEl = document.getElementById("notifications-title");
+  const listEl = document.getElementById("notifications-page-list");
+  const emptyEl = document.getElementById("notifications-page-empty");
+  if (!listEl) return;
+
+  const unread = state.notifications.filter(n => !n.read).length;
+  if (titleEl) titleEl.textContent = unread > 0 ? `Notifications (${unread})` : "Notifications";
+
+  if (state.notifications.length === 0) {
+    listEl.classList.add("hidden");
+    emptyEl.classList.remove("hidden");
+    return;
   }
-}
 
-function toggleNotifDropdown(event) {
-  event?.stopPropagation();
-  if (!state.currentUser) { openModal("login"); return; }
-  const dropdown = document.getElementById("notif-dropdown");
-  if (dropdown) dropdown.classList.toggle("hidden");
-}
+  listEl.classList.remove("hidden");
+  emptyEl.classList.add("hidden");
 
-function closeNotifDropdown() {
-  const dropdown = document.getElementById("notif-dropdown");
-  if (dropdown) dropdown.classList.add("hidden");
-}
-
-function setupNotifDropdownClose() {
-  document.addEventListener("click", (e) => {
-    const dropdown = document.getElementById("notif-dropdown");
-    const bell = document.getElementById("notif-bell-btn");
-    if (!dropdown || dropdown.classList.contains("hidden")) return;
-    if (!dropdown.contains(e.target) && e.target !== bell && !bell?.contains(e.target)) {
-      closeNotifDropdown();
-    }
-  });
+  listEl.innerHTML = state.notifications.map(n => `
+    <div class="notif-page-item ${n.read ? "" : "unread"}" onclick="openNotification('${n.id}','${n.postId}')">
+      <span class="notif-page-icon">💬</span>
+      <div class="notif-page-content">
+        <p><strong>${escapeHtml(n.fromName || "Quelqu'un")}</strong> a répondu à
+          « ${escapeHtml((n.postTitle || "").slice(0, 70))}${(n.postTitle || "").length > 70 ? "…" : ""} »</p>
+        <span class="notif-page-date">${formatDate(n.date)}</span>
+      </div>
+      ${!n.read ? `<span class="notif-page-dot"></span>` : ""}
+    </div>`).join("");
 }
 
 async function openNotification(notifId, postId) {
-  closeNotifDropdown();
   const notif = state.notifications.find(n => n.id === notifId);
   if (notif && !notif.read) {
     try { await updateDoc(doc(db, "notifications", notifId), { read: true }); }
@@ -1412,7 +1437,9 @@ async function submitReport(event, type, targetId, postId) {
 }
 
 async function deletePost(postId) {
-  if (!isAdmin(state.currentUser)) return;
+  const post = state.posts.find(p => p.id === postId);
+  const isOwner = state.currentUser && post && state.currentUser.id === post.authorId;
+  if (!isAdmin(state.currentUser) && !isOwner) return;
   if (!confirm("Supprimer définitivement cette question et toutes ses réponses ?")) return;
 
   try {
@@ -1428,7 +1455,9 @@ async function deletePost(postId) {
 }
 
 async function deleteComment(commentId) {
-  if (!isAdmin(state.currentUser)) return;
+  const comment = state.comments.find(c => c.id === commentId);
+  const isOwner = state.currentUser && comment && state.currentUser.id === comment.authorId;
+  if (!isAdmin(state.currentUser) && !isOwner) return;
   if (!confirm("Supprimer définitivement cette réponse ?")) return;
 
   try {
@@ -1592,7 +1621,6 @@ window.logout = logout;
 window.previewCommentImage = previewCommentImage;
 window.removeCommentImagePreview = removeCommentImagePreview;
 window.openImageLightbox = openImageLightbox;
-window.toggleNotifDropdown = toggleNotifDropdown;
 window.openNotification = openNotification;
 window.markAllNotificationsRead = markAllNotificationsRead;
 window.openReportModal = openReportModal;
