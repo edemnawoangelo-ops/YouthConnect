@@ -1,4 +1,4 @@
-const CACHE_NAME = 'youthconnect-cache-v4';
+const CACHE_NAME = 'youthconnect-cache-v5';
 
 // Liste des fichiers à mettre en cache pour un fonctionnement hors-ligne basique
 const FICHIERS_A_METTRE_EN_CACHE = [
@@ -11,11 +11,19 @@ const FICHIERS_A_METTRE_EN_CACHE = [
     '/icon-512.png'
 ];
 
-// Installation : on met en cache les fichiers essentiels
+// Installation : on met en cache les fichiers essentiels.
+// { cache: 'reload' } force le téléchargement réel depuis le réseau,
+// en ignorant le cache HTTP du navigateur, pour ne jamais stocker une version périmée.
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll(FICHIERS_A_METTRE_EN_CACHE);
+            return Promise.all(
+                FICHIERS_A_METTRE_EN_CACHE.map((url) =>
+                    fetch(url, { cache: 'reload' })
+                        .then((reponse) => cache.put(url, reponse))
+                        .catch((e) => console.error('Échec mise en cache de', url, e))
+                )
+            );
         })
     );
     self.skipWaiting();
@@ -35,12 +43,20 @@ self.addEventListener('activate', (event) => {
     self.clients.claim();
 });
 
-// Récupération : on sert depuis le cache si dispo, sinon on va sur le réseau
+// Récupération : on va d'abord chercher la dernière version en ligne (réseau),
+// et on ne se rabat sur le cache que si l'appareil est hors-ligne.
+// Ça garantit que chaque appareil reçoit toujours la version la plus à jour de l'app.
 self.addEventListener('fetch', (event) => {
+    if (event.request.method !== 'GET') return;
+
     event.respondWith(
-        caches.match(event.request).then((reponseEnCache) => {
-            return reponseEnCache || fetch(event.request);
-        })
+        fetch(event.request)
+            .then((reponseReseau) => {
+                const copie = reponseReseau.clone();
+                caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copie));
+                return reponseReseau;
+            })
+            .catch(() => caches.match(event.request))
     );
 });
 
