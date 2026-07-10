@@ -33,6 +33,23 @@ const VAPID_PUBLIC_KEY = "BHd7SgKkiZXIl2HrIfbuR0CkfqCgHu2CXuOVie3Aj0CPHULTd0uZmf
 const CLOUDINARY_CLOUD_NAME = "dyo3r3lph";
 const CLOUDINARY_UPLOAD_PRESET = "youthconnect_comments";
 
+/* ─────────────────────────────────────────────────────────────
+   Icônes SVG intégrées (remplacent les emojis), réutilisables
+   partout dans l'app. Elles héritent de la couleur du texte
+   (stroke="currentColor") et de sa taille (1em) via la classe .icon-inline.
+───────────────────────────────────────────────────────────────*/
+const ICONS = {
+  question: `<img class="icon-inline" src="https://img.icons8.com/?size=100&id=gZjuHnZgeu9e&format=png&color=000000" alt="">`,
+  message: `<img class="icon-inline" src="https://img.icons8.com/?size=100&id=vul8OV9XDZJL&format=png&color=000000" alt="">`,
+  eye: `<img class="icon-inline" src="https://img.icons8.com/?size=100&id=jGhQfwSC1ZpQ&format=png&color=000000" alt="">`,
+  trash: `<img class="icon-inline" src="https://img.icons8.com/?size=100&id=p8q4L6JWYISm&format=png&color=000000" alt="">`,
+  close: `<img class="icon-inline" src="https://img.icons8.com/?size=100&id=pNYWTouA0gr7&format=png&color=000000" alt="">`,
+  person: `<img class="icon-inline" src="https://img.icons8.com/?size=100&id=g4yImWPgSUpf&format=png&color=000000" alt="">`,
+  calendar: `<img class="icon-inline" src="https://img.icons8.com/?size=100&id=RaHhb1IAXVF5&format=png&color=000000" alt="">`,
+  flag: `<img class="icon-inline" src="https://img.icons8.com/?size=100&id=dmIkrKfjMpTK&format=png&color=000000" alt="">`,
+  clipboard: `<img class="icon-inline" src="https://img.icons8.com/?size=100&id=YiwB8Q7OGVs1&format=png&color=000000" alt="">`,
+};
+
 const firebaseConfig = {
   apiKey: "AIzaSyDg7yT-LOy8kwzOBGEVkl1ipxvcWFUWIGQ",
   authDomain: "youth-connect-2.firebaseapp.com",
@@ -864,7 +881,7 @@ function buildPostCard(post) {
   const cat = CATEGORIES.find(c => c.name === post.category);
   const imgTag = cat
     ? `<img src="${cat.image}" alt="${escapeHtml(cat.name)}" width="18" height="18" style="vertical-align:middle;margin-right:4px;border-radius:50px;" />`
-    : "📋";
+    : ICONS.clipboard;
 
   return `
     <article class="post-card" onclick="openPostDetail('${post.id}')" tabindex="0" role="button"
@@ -876,9 +893,9 @@ function buildPostCard(post) {
       <div class="post-title">${escapeHtml(post.title)}</div>
       <div class="post-excerpt">${escapeHtml(excerpt)}</div>
       <div class="post-footer">
-        <span class="post-author">👤 ${escapeHtml(post.author)}</span>
-        <span>📅 ${formatDate(post.date)}</span>
-        <span class="post-comments">💬 ${comments.length} réponse${comments.length !== 1 ? "s" : ""}</span>
+        <span class="post-author">${ICONS.person} ${escapeHtml(post.author)}</span>
+        <span>${ICONS.calendar} ${formatDate(post.date)}</span>
+        <span class="post-comments">${ICONS.message} ${comments.length} réponse${comments.length !== 1 ? "s" : ""}</span>
       </div>
     </article>`;
 }
@@ -948,7 +965,7 @@ function openPostDetail(postId) {
     : "";
 
   const reportBtn = state.currentUser && !isOwner
-    ? `<button class="report-link" onclick="openReportModal('post','${post.id}','${post.id}')">🚩 Signaler cette question</button>`
+    ? `<button class="report-link" onclick="openReportModal('post','${post.id}','${post.id}')">${ICONS.flag} Signaler cette question</button>`
     : "";
 
   container.innerHTML = `
@@ -958,9 +975,9 @@ function openPostDetail(postId) {
       <h1 class="post-detail-title">${escapeHtml(post.title)}</h1>
       <p class="post-detail-body">${escapeHtml(post.body)}</p>
       <div class="post-detail-meta">
-        <span>👤 ${escapeHtml(post.author)}</span>
-        <span>📅 ${formatDate(post.date)}</span>
-        <span>💬 ${comments.length} réponse${comments.length !== 1 ? "s" : ""}</span>
+        <span>${ICONS.person} ${escapeHtml(post.author)}</span>
+        <span>${ICONS.calendar} ${formatDate(post.date)}</span>
+        <span>${ICONS.message} ${comments.length} réponse${comments.length !== 1 ? "s" : ""}</span>
       </div>
       <div class="post-detail-actions">
         ${reportBtn}
@@ -1014,10 +1031,10 @@ function buildCommentCard(comment) {
 
   const actions = [];
   if (state.currentUser && !isOwner) {
-    actions.push(`<button class="report-link" onclick="openReportModal('comment','${comment.id}','${comment.postId}')">🚩 Signaler</button>`);
+    actions.push(`<button class="report-link" onclick="openReportModal('comment','${comment.id}','${comment.postId}')">${ICONS.flag} Signaler</button>`);
   }
   if (admin || isOwner) {
-    actions.push(`<button class="report-link report-link-danger" onclick="deleteComment('${comment.id}')">🗑️ Supprimer ${admin && !isOwner ? "(admin)" : ""}</button>`);
+    actions.push(`<button class="report-link report-link-danger" onclick="deleteComment('${comment.id}')">${ICONS.trash} Supprimer ${admin && !isOwner ? "(admin)" : ""}</button>`);
   }
 
   return `
@@ -1618,16 +1635,16 @@ function renderModeration() {
     return `
       <div class="report-card">
         <div class="report-card-header">
-          <span class="post-badge">${r.type === "post" ? "❓ Question" : "💬 Réponse"}</span>
+          <span class="post-badge">${r.type === "post" ? `${ICONS.question} Question` : `${ICONS.message} Réponse`}</span>
           <span class="comment-date">${formatDate(r.date)}</span>
         </div>
         <p class="report-reason"><strong>Raison :</strong> ${escapeHtml(r.reason)}</p>
         <p class="report-reporter">Signalé par ${escapeHtml(r.reporterName)}</p>
         <div class="report-content-preview">${contentPreview}</div>
         <div class="report-card-actions">
-          <button class="btn btn-ghost btn-sm" onclick="openPostDetail('${r.postId}')">👁️ Voir le contexte</button>
-          <button class="btn btn-outline-danger btn-sm" onclick="resolveReport('${r.id}','delete')">🗑️ Supprimer le contenu</button>
-          <button class="btn btn-ghost btn-sm" onclick="resolveReport('${r.id}','dismiss')">✕ Rejeter le signalement</button>
+          <button class="btn btn-ghost btn-sm" onclick="openPostDetail('${r.postId}')">${ICONS.eye} Voir le contexte</button>
+          <button class="btn btn-outline-danger btn-sm" onclick="resolveReport('${r.id}','delete')">${ICONS.trash} Supprimer le contenu</button>
+          <button class="btn btn-ghost btn-sm" onclick="resolveReport('${r.id}','dismiss')">${ICONS.close} Rejeter le signalement</button>
         </div>
       </div>`;
   }).join("");

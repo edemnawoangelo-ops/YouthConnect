@@ -114,6 +114,15 @@ select {
 
 /* ─── Boutons ───────────────────────────────────────────────── */
 
+/* ─── Boutons ───────────────────────────────────────────────── */
+
+.icon-inline {
+    width: 1em;
+    height: 1em;
+    flex-shrink: 0;
+    vertical-align: -0.125em;
+}
+
 .btn {
     display: inline-flex;
     align-items: center;
