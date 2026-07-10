@@ -327,8 +327,8 @@ select {
     position: relative;
     background: transparent;
     border: none;
-    font-size: 1.25rem;
-    padding: 8px 10px;
+    font-size: 1.1rem;
+    padding: 6px 8px;
     border-radius: var(--radius-md);
     transition: background var(--transition);
 }
@@ -344,11 +344,11 @@ select {
     right: 0;
     background: var(--danger);
     color: var(--white);
-    font-size: .65rem;
+    font-size: .58rem;
     font-weight: 700;
-    min-width: 16px;
-    height: 16px;
-    padding: 0 4px;
+    min-width: 14px;
+    height: 14px;
+    padding: 0 3px;
     border-radius: 999px;
     display: flex;
     align-items: center;
@@ -2266,8 +2266,8 @@ textarea {
     .nav-mobile-actions .btn {
         flex: 1;
         justify-content: center;
-        font-size: .8125rem;
-        padding: 7px 12px;
+        font-size: .75rem;
+        padding: 6px 10px;
         white-space: normal;
         text-align: center;
     }

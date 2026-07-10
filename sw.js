@@ -1,4 +1,4 @@
-const CACHE_NAME = 'youthconnect-cache-v3';
+const CACHE_NAME = 'youthconnect-cache-v4';
 
 // Liste des fichiers à mettre en cache pour un fonctionnement hors-ligne basique
 const FICHIERS_A_METTRE_EN_CACHE = [
@@ -64,14 +64,20 @@ self.addEventListener('push', (event) => {
 });
 
 // Clic sur une notification : on ouvre (ou on met au premier plan) l'onglet YouthConnect
+// et on l'amène sur la bonne page de l'app (notifications, ou directement la question).
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
-    const cible = event.notification.data?.url || '/';
+    const cible = event.notification.data?.url || '/?openNotifications=1';
 
     event.waitUntil(
         self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientsList) => {
             for (const client of clientsList) {
-                if ('focus' in client) return client.focus();
+                if ('focus' in client) {
+                    // L'onglet est déjà ouvert : on le met au premier plan et on lui indique
+                    // (via postMessage) où naviguer, sans recharger toute la page.
+                    client.postMessage({ type: 'NAVIGATE', url: cible });
+                    return client.focus();
+                }
             }
             if (self.clients.openWindow) return self.clients.openWindow(cible);
         })

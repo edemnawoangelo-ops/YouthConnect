@@ -134,7 +134,35 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
     tryOpen();
   }
+
+  // Lien direct vers la page Notifications (reçu en cliquant sur une vraie notification système)
+  if (new URLSearchParams(window.location.search).get("openNotifications") === "1") {
+    goToNotificationsFromDeepLink();
+  }
+
+  // Si l'app est déjà ouverte dans un onglet, le service worker nous indique où naviguer
+  // au clic sur une notification (au lieu de rouvrir un nouvel onglet)
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.addEventListener("message", (event) => {
+      if (event.data?.type === "NAVIGATE" && typeof event.data.url === "string") {
+        const params = new URLSearchParams(event.data.url.split("?")[1] || "");
+        if (params.get("openNotifications") === "1") {
+          goToNotificationsFromDeepLink();
+        } else if (params.get("post")) {
+          const pid = params.get("post");
+          if (state.posts.some(p => p.id === pid)) openPostDetail(pid);
+        }
+      }
+    });
+  }
 });
+
+/* Ouvre la page Notifications (si l'utilisateur n'est pas connecté, showPage() proposera la connexion) */
+function goToNotificationsFromDeepLink() {
+  showPage("notifications");
+  // Nettoie l'URL pour éviter de rouvrir la page à chaque rafraîchissement
+  window.history.replaceState({}, document.title, window.location.pathname);
+}
 
 /* ─────────────────────────────────────────────────────────────
    4. FIREBASE : ÉCOUTE EN TEMPS RÉEL
@@ -175,13 +203,51 @@ function listenNotifications() {
   if (!state.currentUser) return;
   if (unsubNotifications) unsubNotifications();
 
+  let isFirstSnapshot = true;
   const q = query(collection(db, "notifications"), where("userId", "==", state.currentUser.id));
   unsubNotifications = onSnapshot(q, (snapshot) => {
     state.notifications = snapshot.docs
       .map(d => ({ id: d.id, ...d.data() }))
       .sort((a, b) => toMillis(b.date) - toMillis(a.date));
     renderNotifBell();
+
+    // Notification système "réelle" affichée instantanément dès qu'une nouvelle réponse
+    // arrive sur cet appareil (en plus du push serveur, qui couvre les autres appareils).
+    if (!isFirstSnapshot) {
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === "added") {
+          const n = change.doc.data();
+          showRealNotification(
+            "Nouvelle réponse à ta question",
+            `${n.fromName || "Quelqu'un"} a répondu : « ${(n.postTitle || "").slice(0, 80)}${(n.postTitle || "").length > 80 ? "…" : ""} »`
+          );
+        }
+      });
+    }
+    isFirstSnapshot = false;
   }, (err) => console.error("Erreur écoute notifications:", err));
+}
+
+/* Affiche une vraie notification système (bannière du navigateur/téléphone), pas juste un toast interne */
+async function showRealNotification(title, body) {
+  if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+  try {
+    if ("serviceWorker" in navigator) {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (reg) {
+        reg.showNotification(title, {
+          body,
+          icon: "/icon-192.png",
+          badge: "/icon-192.png",
+          data: { url: "/?openNotifications=1" },
+        });
+        return;
+      }
+    }
+    new Notification(title, { body, icon: "/icon-192.png" });
+  } catch (e) {
+    console.error("Erreur affichage notification locale:", e);
+  }
 }
 
 function listenReports() {
@@ -1012,7 +1078,7 @@ async function handleAddComment(event) {
         subs,
         "Nouvelle réponse à ta question",
         `${state.currentUser.name} a répondu : « ${post.title.slice(0, 80)}${post.title.length > 80 ? "…" : ""} »`,
-        `/?post=${post.id}`
+        `/?openNotifications=1`
       );
     });
   }
