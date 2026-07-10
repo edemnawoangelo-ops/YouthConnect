@@ -13,9 +13,6 @@ import {
   getFirestore, collection, addDoc, getDocs, query, orderBy,
   onSnapshot, doc, deleteDoc, updateDoc, setDoc, serverTimestamp, where
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import {
-  getStorage, ref, uploadBytes, getDownloadURL
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
 /* ─────────────────────────────────────────────────────────────
    NOTIFICATIONS PUSH (Web Push) : clé publique VAPID
@@ -23,6 +20,18 @@ import {
    serveur, dans api/send-push.js) qui doit rester secrète.
 ───────────────────────────────────────────────────────────────*/
 const VAPID_PUBLIC_KEY = "BHd7SgKkiZXIl2HrIfbuR0CkfqCgHu2CXuOVie3Aj0CPHULTd0uZmfw0s8yVGF-tMJt5T3-yRGm_NJT22saQYdU";
+
+/* ─────────────────────────────────────────────────────────────
+   IMAGES DES RÉPONSES : upload vers Cloudinary (pas Firebase Storage,
+   qui nécessite désormais le forfait payant Blaze).
+   Le "cloud name" est le même que celui déjà utilisé pour les images
+   du site (res.cloudinary.com/dyo3r3lph/...).
+   IMPORTANT : crée un "upload preset" en mode "Unsigned" nommé
+   exactement "youthconnect_comments" dans ton compte Cloudinary
+   (Settings → Upload → Upload presets → Add upload preset).
+───────────────────────────────────────────────────────────────*/
+const CLOUDINARY_CLOUD_NAME = "dyo3r3lph";
+const CLOUDINARY_UPLOAD_PRESET = "youthconnect_comments";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDg7yT-LOy8kwzOBGEVkl1ipxvcWFUWIGQ",
@@ -35,7 +44,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const storage = getStorage(app);
+// Note : plus de Firebase Storage — les images des réponses passent par Cloudinary (voir plus bas).
 
 /* ─────────────────────────────────────────────────────────────
    MODÉRATION : liste des emails administrateurs
@@ -298,16 +307,32 @@ async function addCommentToFirestore(commentData) {
   }
 }
 
-/* Upload d'une image (réponse) vers Firebase Storage → renvoie l'URL publique */
+/* Upload d'une image (réponse) vers Cloudinary → renvoie l'URL publique (https, CDN) */
 async function uploadCommentImage(file) {
   try {
-    const path = `comment-images/${uid()}-${file.name}`;
-    const storageRef = ref(storage, path);
-    await uploadBytes(storageRef, file);
-    return await getDownloadURL(storageRef);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+    formData.append("folder", "comment-images");
+
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+      method: "POST",
+      body: formData,
+    });
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok || !data?.secure_url) {
+      const errMsg = data?.error?.message || `HTTP ${res.status}`;
+      throw new Error(errMsg);
+    }
+    return data.secure_url;
   } catch (e) {
-    console.error("Erreur upload image:", e);
-    showNotification("L'image n'a pas pu être envoyée (réessaie sans image).", "error");
+    console.error("Erreur upload image (Cloudinary):", e.message || e);
+    let msg = "L'image n'a pas pu être envoyée (réessaie sans image).";
+    if (String(e.message || "").toLowerCase().includes("preset")) {
+      msg = "Envoi d'image refusé : l'upload preset Cloudinary est manquant ou mal configuré (vérifie qu'il est bien en mode « Unsigned »).";
+    }
+    showNotification(msg, "error");
     return null;
   }
 }
